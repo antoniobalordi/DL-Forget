@@ -1,0 +1,28 @@
+theory DlHost
+
+begin
+
+// Function signature and definition of the equational theory E
+
+functions: fst/1, pair/2, sdec/2, senc/2, snd/1
+equations:
+    fst(<x.1, x.2>) = x.1,
+    sdec(senc(x.1, x.2), x.2) = x.1,
+    snd(<x.1, x.2>) = x.2
+
+builtin  symmetric-encryption
+
+rule (modulo E) H1:
+   [ State( 'H', '1', a ) ] --[ H( ) ]-> [ State( 'H', '2', a ) ]
+
+rule (modulo E) H2:
+   [ State( 'H', '2', a ), Fr( ~n ) ]
+  --[ H( ), Send( 'H', 'fresh', ~n ) ]->
+   [ State( 'H', '3', <a, ~n> ), Out( ~n ) ]
+
+rule (modulo E) H3:
+   [ State( 'H', '3', <a, n> ) ]
+  --[ H( ), Send( 'H', 'later', n ) ]->
+   [ Out( n ) ]
+
+end

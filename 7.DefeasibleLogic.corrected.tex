@@ -1,0 +1,789 @@
+\section{Defeasible Logic for \forget{}}
+\label{Sec:DefeasibleLogic}
+
+In this section, we introduce a Defeasible Logic formalism that encodes the \forget{} mutation in terms of defeasible rules and defeaters. In \XMen~2.0, every mutation, whether selected in the tool or triggered as a consequence of another mutation, is applied to the ceremony specification before the specification is passed to Tamarin. Tamarin analyses a mutated specification in the same manner as it analyses the original specification, with no capability to distinguish whether the specification has been mutated; the mutation task is therefore independent of how the verification tool works internally. The mutations other than \forget{} (\skipmutation{}, \add{}, \replace{}, \neglect{}, and \disorder{}) operate on explicit elements of the role scripts, namely messages and actions (send/receive/internal check), \forget{} works on knowledge, which in the role script is left implicit. The \forget{} mutation, in particular, as defined in~\Cref{Alg:ForgetMutation1}, covers two cases of declarative forgetting: an agent fails to add a received message to their knowledge, or forgets a message they already knew, as a result, unable to use it. Agents can derive messages from their knowledge; such derivations rely on an underlying reasoning system that is hard-coded into the verification tool. Rather than modifying this reasoning system, \XMen~2.0  models the effect of the forgetting directly on the ceremony, producing a mutated specification in which an agent sends a different message (\replace{}), does not perform the send at all (\skipmutation{}), or does not perform an internal action that uses the forgotten message (\neglect{}). To decide which mutation is triggered, \Cref{Alg:ForgetMutation1} examines the derivations of the message to be sent and discards those that use a forgotten message as a hypothesis.
+
+A third case is \emph{procedural} forgetting, in which the agent loses the ability to carry out a derivation because they can no longer apply an inference rule (e.g., symmetric decryption) or carry out a whole procedure. What is forgotten is not part of the role scripts: \XMen~2.0 operates on the messages sent and the checks performed. In Tamarin, the Dolev-Yao steps performed by an honest agent to construct a message (decryption, projection, pairing, encryption) are not represented explicitly in the protocol specification as individual rule applications that can be directly modified; they are resolved implicitly by Tamarin's underlying reasoning system. Even if through restrictions and lemmas  we would be able to constrain the effects, the goal is not to modify or extend Tamarin's reasoning process, rather to perform all the steps externally, modifying the ceremony before it is given to the verifier. Blocking an inference rule for an honest agent directly would therefore require either modifying Tamarin or simulating the agent's ability to derive messages with additional state facts and transitions in the specification, as we will see in~\Cref{Subsec:WhyDefeasible}. We do not modify Tamarin: if we do, the rule could be removed there directly. Tamarin therefore keeps its standard rules, and the mutated specification must ensure that they do not reintroduce what forgetting blocks. Since the honest agent's deduction steps are resolved by pattern matching, an agent rule whose premises can still be matched by the result of a forgotten rule will allow the agent to use that result again.
+
+In principle, this can be done by extending~\Cref{Alg:ForgetMutation1}, so that a derivation is also discarded when it uses a forgotten rule or procedure. \Cref{Alg:ForgetMutation1}, however, describes several of its steps semi-informally;
+%such as the enumeration of derivations and the test of whether a derivation uses a blocked hypothesis, and extending this test to rules and whole procedures would add further informal steps. 
+adopting the defeasible Logic, allows us to make these steps formal. Each normal derivation is reified as a named object, and blocking becomes defeat: a defeater can block a forgotten hypothesis, a forgotten rule, or a whole derivation. In~\Cref{Alg:ForgetMutation2}, the resulting conclusions decide whether the intended send is preserved or triggers \replace{} or \skipmutation{}, and the mutated specification is then analysed by Tamarin with its standard rules. Defeasible Logic also expresses facts, derivations, lapses, and priorities within a single framework, treats declarative and procedural forgetting uniformly, and represents cue-triggered recovery directly through prioritised reinstaters.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Preliminaries}
+\label{Subsec:DefeasibleLogic}
+
+Defeasible Logic~\cite{nute1994defeasible} is a non-monotonic reasoning formalism. A \emph{defeasible theory} is a triple 
+\[
+  \Dtheory=(F,R,>),
+\]
+where $F$ is a finite set of facts, $R$ is a finite set of rules, and $>$ is a superiority relation over rule labels. 
+
+A \emph{literal} $p$ is an atom or its negation.
+\emph{Facts}\footnote{The term \emph{fact} also appears, with a different meaning, in Tamarin's execution model (\Cref{Subsec:ExecutionModel}): there a fact is a member of the system-state multiset. In Defeasible Logic a \emph{fact} is a premise taken to hold unconditionally. We retain the term in both settings, as each is standard in its respective literature.} are literals taken to hold unconditionally.
+Each rule has a unique label, a body consisting of a set of literals and a literal as its head~\cite{governatori2017annotated}.
+
+The set $R = R_s\mathbin{\cup}R_d\mathbin{\cup}R_{\mathit{dft}}$ comprises three types of rules:
+\begin{enumerate}
+    \item \emph{Strict rules}, denoted by $R_s$ and written using $\to$, which hold without exception; 
+    \item \emph{Defeasible rules}, denoted by $R_d$ and written using $\Rightarrow$, which hold unless overridden; and
+    \item \emph{Defeaters}, denoted by $R_{\mathit{dft}}$ and written using $\leadsto$, which cannot establish their heads but can prevent complementary literals from being defeasibly established. 
+\end{enumerate}
+
+The \emph{superiority relation} $>$ is an acyclic binary relation on rule labels, specifying priorities between rules with complementary heads. 
+
+We adopt the proof theory of the ambiguity-blocking, team-defeat Defeasible Logic $DL(\partial)$, following Antoniou et al.~\cite{antoniou2001representation}. From a theory $\Dtheory$, the calculus derives tagged conclusions $+\partial\,p$ (``$p$ is defeasibly provable'') and $-\partial\,p$ (``$p$ is provably not defeasibly provable''). The tag $-\partial\,p$ is a conclusion of the calculus with its own proof conditions: it holds when every rule for $p$ is either inapplicable or defeated. It is therefore not the same as a failed attempt to derive $+\partial\,p$, nor does it establish $+\partial\,\neg p$. The calculus also has the tags $+\Delta\,p$, when $p$ follows from facts and strict rules alone, and $-\Delta\,p$, when it is proved that $p$ does not follow in this way.
+
+%\fix{Luca}{Reorder some of this text. These last two sentences probably fit better below, when we speak about $p$. In general, check the order in which we say things, which currently is a bit round-about.}
+
+Consider a human agent $\human$, a state $i$, and the target message $m$ of the send action currently under analysis. Let $\Pi_m$ denote the set of normal derivations of $m$ from the agent's knowledge $\K{\human}{i}$. The expressions below are schematic names for ground propositional atoms. Thus, the compilation\footnote{We write \emph{compilation} for the step that turns the human agent's state at a transition, together with the candidate targets, into a defeasible theory; it does not refer to compiling source code.} instantiates the vocabulary of standard Defeasible Logic and does not introduce a first-order extension of its proof theory.
+
+\begin{itemize}
+        \item $\Known(m)$: The message $m$ is stored in the knowledge of $\human$ at state $i$, formally:
+        \[
+        \Known(m)\in F\quad\text{iff}\quad m\in\K{\human}{i}. 
+        \]
+        Thus, $\Known(m)$ is recorded as a \emph{fact}~\cite{nute1994defeasible}. It represents possession of $m$ in the agent's monotonic knowledge state and is not withdrawn when $m$ is forgotten.
+        
+        \item $\Lapsed(\bar m)$: The message $\bar m$ is subject to a declarative lapse in at least one normal derivation of the target $m$. Formally,
+        \[
+        \Lapsed(\bar{m}) \in F \quad\text{iff}\quad \exists \pi\in\Pi_{m}: \bar m\in\Blocked(\Hyp_\pi,\Forget_\human^i).
+        \]
+
+        Throughout, $m$ denotes the target of a derivation and $\bar m$ a hypothesis of that derivation that may be subject to a lapse.
+        
+        Equivalently, a lapse fact is added for every
+        \[
+        \bar m\in \bigcup_{\pi\in\Pi_m}         \Blocked(\Hyp_\pi,\Forget_{\human}^{i}).
+        \]
+
+        The atom $\Lapsed(\bar m)$ records a \emph{prima-facie blocking condition} and is used as a premise for a forgetting defeater against derivations that rely on $\bar m$. It does not express final inaccessibility, since a superior reinstater may neutralise the corresponding defeater while $\Lapsed(\bar m)$ remains a fact. Thus, $\Known(\bar m)$ records that $\bar m$ remains stored in the agent's monotonic knowledge, whereas $\Lapsed(\bar m)$ records that forgetting currently provides a reason not to use it in the affected derivations.
+        
+        \item $\Via(\K{\human}{i}, \pi, m)$: $\pi\in\Pi_m$ is a particular derivation by which $\human$ may derive $m$ from $\K{\human}{i}$. Its basic support is given by the defeasible rule:
+        \[
+        d_\pi: \bigwedge_{h\in\Hyp_\pi}\Known(h) \ \defeas\ \Via(\K{\human}{i},\pi,m). 
+        \]
+        Therefore, $\Hyp_\pi\subseteq\K{\human}{i}$, makes $d_\pi$ applicable, but does not by itself guarantee  $+\partial\,\Via(\K{\human}{i},\pi,m)$: a declarative or procedural defeater may still defeat this derivation. Parametrising $\Via$ by $\pi$ is essential because one derivation of $m$ may be defeated while another derivation of $m$ survives. 
+        
+        \item $\Usable(m)$: The message $m$ is usable by $\human$ in a ceremony action at state $i$. For every $\pi\in\Pi_m$, we add the strict aggregation rule 
+        \[
+        r^{\mathit{use}}_{\pi,m}: \Via(\K{\human}{i},\pi,m) \to \Usable(m).
+        \]
+        Consequently, provided these are the only rules with head $\Usable(m)$,
+        \[
+        +\partial\,\Usable(m) \quad\text{iff}\quad \exists\pi\in\Pi_m: +\partial\,\Via(\K{\human}{i},\pi,m).
+        \]
+        Thus, usability requires at least one surviving derivation. The aggregation rule is strict, but $\Usable(m)$ need not be definitely provable: when its $\Via$ premise is only defeasibly provable, $\Usable(m)$ is also obtained at the defeasible proof level. No direct strict rule leads from $\Known$ to $\Usable$.
+\end{itemize}
+
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}[
+    node distance=1.15cm and 1.7cm,
+    atom/.style={
+        draw,
+        rounded corners,
+        align=center,
+        inner sep=5pt,
+        minimum width=3.2cm
+    },
+    smallatom/.style={
+        draw,
+        rounded corners,
+        align=center,
+        inner sep=4pt,
+        minimum width=2.6cm
+    },
+    rule/.style={-{Latex[length=2mm]}, thick},
+    defeasible/.style={-{Latex[length=2mm]}, thick, dashed},
+    defeater/.style={
+        -{Latex[length=2mm]},
+        thick,
+        decorate,
+        decoration={snake, amplitude=0.6mm, segment length=3mm}
+    },
+    norule/.style={-{Latex[length=2mm]}, thick, dashed}
+]
+
+\node[atom] (known) 
+    {$\Known(h_1),\ldots,\Known(h_k)$\\
+     {\scriptsize known hypotheses}};
+
+\node[atom, below=of known] (via) 
+    {$\Via(\K{\human}{i},\pi,m)$\\
+     {\scriptsize derivation $\pi$ supports $m$}};
+
+\node[atom, below=of via] (usable) 
+    {$\Usable(m)$\\
+     {\scriptsize $m$ can be used}};
+
+\node[smallatom, right=of via] (lapsed) 
+    {$\Lapsed(h_j)$\\
+     {\scriptsize prima-facie lapse}};
+
+\draw[defeasible] (known) -- node[right, align=left] 
+    {\scriptsize defeasible\\[-0.15em]\scriptsize derivation rule} (via);
+
+\draw[rule] (via) -- node[right, align=left] 
+    {\scriptsize strict\\[-0.15em]\scriptsize aggregation rule} (usable);
+
+\draw[defeater] (lapsed) -- node[above, align=center] 
+    {\scriptsize may defeat} (via);
+
+\draw[norule] ([xshift=-0.65cm]known.south west) 
+    to[bend right=25] node[left, align=center] 
+    {\scriptsize no strict\\[-0.15em]\scriptsize bypass assumed} 
+    ([xshift=-0.65cm]usable.north west);
+    
+\end{tikzpicture}
+\caption{Dependency between the extended atoms. Known hypotheses support a derivation atom $\Via(\K{\human}{i},\pi,m)$ only defeasibly; if the derivation survives defeat, it strictly yields $\Usable(m)$. Thus usability is mediated by at least one surviving derivation, rather than by a strict bypass from $\Known$ to $\Usable$.}
+\label{Fig:AtomWorkflow}
+\end{figure}
+ 
+As defined in~\Cref{Alg:ForgetMutation1}, a message is either usable in a derivation or forgotten; the current  \forget{} mutation lets us determine which messages have been forgotten, whether an intended message can still be derived, and, if not, which replacements are admissible. However, this reflects only partially how human memory operates. Cognitive psychology describes remembering as reconstructive, heuristic-based, and heavily reliant on default routines, rather than as the simple presence or absence of information~\cite{bartlett1995remembering}.
+
+The Defeasible Logic formalism aims to capture this reconstructive behaviour by representing distinctions that are not directly expressible in the \Forget{} set semantics of~\Cref{Def:ForgetMutation} and~\Cref{Def:DerivableUnderForgetting}. The representational motivation for this extension is illustrated in~\Cref{Subsec:WhyDefeasible}. For example, rather than a message to be sent, an agent might forget how to perform a ceremony step (e.g., how to apply a Dolev-Yao inference rule it once commanded), or an agent might recall a forgotten message after receiving a cue (e.g., a hint that helps recover a password). Modelling such lapses calls for reasoning with defaults, exceptions, and non-monotonic revisions, which is what Defeasible Logic aims to provide.
+We therefore give the \forget{} mutation a defeasible-logic formalisation, rather than capturing it through the algorithmic procedure of~\Cref{Alg:ForgetMutation1} alone. This choice lets the formalism capture the following three dimensions of human fallibility that the \Forget{} set, on its own, leaves implicit:
+\begin{enumerate}
+    \item \textbf{Declarative Forgetting:} 
+    Human users typically navigate security ceremonies following simple ``rules of thumb''. We model these as a defeasible rule, and a memory lapse as a defeater ($\leadsto$) for the opposite conclusion. When applicable, the defeater prevents the default conclusion from being derived, unless overridden by a superior rule, but does not derive its negation. For each target message $m$, each normal derivation $\pi\in\Pi_m$ of $m$, and each hypothesis $\bar{m}\in\Hyp_\pi$, we add a defeater whose applicability is controlled by the corresponding $\Lapsed(\bar m)$ fact:
+    \[
+    \omega_{\pi,\bar m} \;:\; \Lapsed(\bar m)\ \defeat\ \neg\Via(\K{\human}{i}, \pi, m).    
+    \]
+    Because knowledge is monotonic, $\Known({\bar{m}})$ remains in $F$ whether or not $\bar{m}$ is forgotten. The lapse is therefore recorded by a separate fact $\Lapsed(\bar{m})$, added to $F$ exactly when $\bar{m} \in \bigcup_{\pi \in \Pi_m} \Blocked(\Hyp_\pi, \Forget_{\human}^i)$. This fact activates $\omega_{\pi,\bar m}$, which, being superior to $d_\pi$, defeats $d_\pi$'s support unless the defeater is itself overruled by a superior reinstater. In the absence of such a reinstater, the result is $-\partial\Via(\K{\human}{i}, \pi, m)$, without establishing $+\partial\,\neg\Via(\K{\human}{i}, \pi, m)$; $\Known({\bar{m}})$ stays in $F$.
+    
+    \item \textbf{Procedural Forgetting:} The $\Blocked$ function of~\Cref{Alg:ForgetMutation1} localises a lapse at the leaves of a derivation tree: what is lost (e.g., a previously known key) is a fact. We call this \emph{declarative} forgetting, as it concerns the loss of knowing-\emph{what}. Human lapses in ceremonies, however, also concern knowing-\emph{how}: an agent may retain an encrypted message, and every fact needed to use it, and nonetheless fail to use it. Using the message is not a matter of possessing facts but of executing a procedure over them and a derivation is only as available as its constituent steps. What has been forgotten may be a step of that procedure, or the very fact that a multi-step procedure is to be carried out at all. Because the Defeasible Logic formalism reifies derivations through the atom $\Via(\K{\human}{i}, \pi, m)$, a defeater can target not only a forgotten hypothesis but also a forgotten step of $\pi$, or $\pi$ as a whole. We develop this in~\Cref{Subsec:ProceduralForgetting}, where we distinguish \emph{forgetting a rule of a procedure} from \emph{forgetting the procedure as a whole}, and argue that this form of forgetting can be expressed more formally through the defeasible theory. Procedural forgetting feeds a downstream decision layer: the intended send is preserved if some derivation of the target is undefeated; otherwise it triggers \skipmutation{}, unless a candidate target generated for a declarative blocker is usable. The message-substitution loop of~\Cref{Alg:ForgetMutation1} remains specific to declarative blockers, while forgotten explicit role actions continue to trigger \textsc{Neglect}.
+    
+    \item \textbf{Context-dependent Reinstaters:} Forgetting is rarely absolute; it is often context-sensitive in the sense of Tulving~\cite{tulving1974cue}: an agent may recall a lost credential like a password when prompted by a cue such as a familiar interface or a password hint. In Defeasible Logic, we formalise a cue as a higher-priority defeasible rule that outranks the forgetting defeater, a \emph{reinstater}, so that $>$ resolves the conflict in favour of recall. This differs from re-acquisition, which would be the equivalent of removing a message from the \Forget{} set when it is received again in a later state: a reinstater models a \emph{within-state} recovery triggered by a cue, and the two mechanisms co-exist. We provide an example of this in~\Cref{Sec:BankReset}, where an environmental cue triggers a reinstater.
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Procedural Forgetting}
+\label{Subsec:ProceduralForgetting}
+
+The compilation that treats forgetting as ``declarative'' places every lapse at the leaves of a derivation tree: although a defeater $\omega_{\pi,\bar{m}}$ is emitted for every hypothesis $\bar{m}\in\Hyp_\pi$, it becomes applicable only when $\bar{m}$ is blocked by the \Forget{} set. This is faithful to one kind of forgetting, the loss of a message of declarative memory, but it does not exhaust human memory lapses. Philosophy has long distinguished knowing-\emph{what} from knowing-\emph{how}~\cite{ryle1949concept}, and memory research correspondingly separates declarative from procedural memory~\cite{cohen1980preserved,anderson1982acquisition}: one may retain every piece of information a task requires and yet fail to perform the task, because what has decayed is not a fact but a way of proceeding. In a security ceremony, this is not an exotic case. Behind a single transition of a role-script, there typically lies a chain of steps. Upon receiving an encrypted message ${\{\nonce{\human},\nonce{\bank{}}\}}_{\key{\human}}$ in the Bank Login ceremony, for example, the human agent must decrypt it, extract a message component $\nonce{\human}$, compare it with a value sent earlier, compose a fresh key $\{\nonce{\human},\nonce{\bank{}}\}$, and construct an encrypted message as a reply. Some of these steps are inferential, i.e., applications of the knowledge inference rules; others are internal actions of the role-script, such as checks. A lapse may impact any of them, or their ordering, without any fact being lost. 
+
+\begin{definition}[Procedure]
+\label{Def:Procedure}
+A \emph{procedure} attached to a role-script of a human agent $\human$ is a finite sequence of \emph{steps}, each of which is either 1) an application of a knowledge inference rule or 2) an action of $\human$'s role-script. A normal derivation $\pi$ of a message $m$ from $\K{\human}{i}$ is the purely inferential case. Formally, $\mathcal R$ denote the set of knowledge inference rules. We identify each rule by its unique name. For example, $\RuleLabel{pair}$ is the pairing rule, and $\RuleOcc{pair}{m_1,m_2}$ is its application to $m_1$ and $m_2$:
+\[
+    \frac{m_1\qquad m_2}{\langle m_1,m_2\rangle}\;\RuleLabel{pair}.
+\]
+Here, $\RuleOcc{pair}{m_1,m_2}$ denotes the application, whose result is the message $\langle m_1,m_2\rangle$.
+
+We define
+\[
+    \Rules(\pi):=\{\,r\in\mathcal R
+       \mid r\text{ is applied in }\pi\,\}.
+\]
+where $\Rules(\pi)$ is the set of distinct inference rules that $\pi$ uses: the competences $\human$ must command in order to carry out the derivation. 
+If a rule is applied more than once, it still appears only once in $\Rules(\pi)$. Forgetting a rule $r$ blocks every derivation that uses it, whatever the messages to which it is applied. Forgetting only a particular occurrence is outside the scope of the present compilation.
+\end{definition}
+
+Reading a derivation as a sequence of rule-application occurences, rather than only as a tree with hypotheses at its leaves, we distinguish two forms of procedural forgetting, which differ in what is forgotten before they differ in how they are modelled.
+
+%%%%%%%%%%%%%%%%%%
+\paragraph{Forgetting a Rule}
+%\fix{Luca}{It would be useful to have more detailed examples}
+To provide a more efficient description, we will present a more detailed example where we will outline all the different steps of forgetting a rule. 
+
+Consider the following scenario: 
+\paragraph{Forgetting a Rule}
+%\fix{Luca}{It would be useful to have more detailed examples}
+We illustrate rule-level procedural forgetting with a derivation in which the same inference-rule schema occurs more than once. Let
+\[
+    \K{\human}{i}
+    = \bigl\{\, \{\!|m_1|\!\}_{m_2}, \langle m_2,m_4\rangle, \{\!|m_3|\!\}_{m_2}, \{m_2\}_{m_4}, m_4^{-1} \,\bigr\},
+    \qquad
+    \Forget_{\human}^{i}=\varnothing,
+\]
+and take the target message to be $\langle m_1,m_3\rangle$. One normal derivation $\pi$ is
+\[
+\frac{
+    \displaystyle
+    \frac{
+        \{\!|m_1|\!\}_{m_2}
+        \qquad
+        \displaystyle\frac{\langle m_2,m_4\rangle}{m_2}\;\mathsf{UNPAIR}
+    }{m_1}\;\mathsf{SDEC}^{(1)}
+    \qquad
+    \displaystyle
+    \frac{
+        \{\!|m_3|\!\}_{m_2}
+        \qquad
+        \displaystyle\frac{\{m_2\}_{m_4}\qquad m_4^{-1}}{m_2}\;\mathsf{ADEC}
+    }{m_3}\;\mathsf{SDEC}^{(2)}
+}{\langle m_1,m_3\rangle}\;\mathsf{PAIR}.
+\]
+The superscripts distinguish the two applications of the same rule
+$\RuleLabel{sdec}$. The left branch first projects $m_2$ from $\langle m_2,m_4\rangle$ and uses it to symmetrically decrypt $\{\!|m_1|\!\}_{m_2}$. The right branch obtains the same key $m_2$ by asymmetrically decrypting $\{m_2\}_{m_4}$ with $m_4^{-1}$, and then symmetrically decrypts $\{\!|m_3|\!\}_{m_2}$. Finally, the two results are paired to obtain $\langle m_1,m_3\rangle$.
+
+Consequently,
+\[
+    \Rules(\pi)=
+    \{\RuleLabel{pair},\RuleLabel{sdec},
+      \RuleLabel{unpair},\RuleLabel{adec}\}.
+\]
+
+If the human forgets $\RuleLabel{sdec}$, both symmetric-decryption occurrences are blocked. Every other derivation using that rule is also blocked. Forgetting $\RuleLabel{unpair}$ blocks the left branch, forgetting $\RuleLabel{adec}$ blocks the right branch, and forgetting $\RuleLabel{pair}$ prevents the final construction of the target. In each case, the hypotheses remain known. If an alternative derivation of $\langle m_1,m_3\rangle$ exists that does not use the forgotten label, that derivation may still survive. Thus, forgetting a rule affects every derivation that uses it, but makes a target unusable only when no derivation survives.
+%For example, let
+% \[
+%     \K{\human}{i}
+%     = \{\,\{\!|\langle n_1,n_2\rangle|\!\}_k,\ k\,\},
+%     \qquad \Forget_{\human}^{i}=\varnothing.
+% \]
+% A normal derivation $\pi$ of $n_1$ decrypts the ciphertext using $k$ and then projects its first component. Forgetting either inference rule blocks $\pi$, although its hypotheses remain known. Forgetting the decryption rule also blocks every other derivation requiring decryption; forgetting the projection rule leaves decryption available.
+% If $n_1$ is also directly known, its direct derivation survives either lapse. Thus, forgetting a rule affects every derivation using that rule, but makes a target unusable only when no derivation survives.
+%The human agent $\human$ constructing a response may still be able to decrypt the message ${\{\nonce{\human},\nonce{\bank{}}\}}_{\key{\human}}$ and to compare the value of $\nonce{\human}$ with that sent earlier, yet no longer recall that the session key $\{{\nonce{\human},\nonce{\bank{}}\}}$ must be composed from \emph{both} received nonces. As a separate example, in the Unix password authentication procedure~\cite{morris1979password}, a system, or a human simulating its verification by hand, may remember the general need to hash and compare two values, yet omit the salt that should have been included before hashing. In this case, the forgotten rule is not the whole verification procedure, but the operation that combines the message with the salt before the hash is computed. Since a rule label is a general competence rather than a token of a particular recipe, losing $r$ is losing it \emph{everywhere}: every derivation whose $\Rules$ set contains $r$ is affected, for every target message. Forgetting a rule is therefore the modelling representation of losing a specific skill.
+
+%%%%%%%%%%%%%%%%%%
+\paragraph{Forgetting a Procedure as a Whole}
+
+In the second form, the agent forgets a particular inferential procedure $\pi$, while its constituent rule competences remain available and its hypotheses remain known. In the preceding example, forgetting $\pi$ blocks the displayed derivation of $\langle m_1,m_3 \rangle$. The agent can still pair, project and decrypt in other derivations. This differs from forgetting an explicitly represented role-script check, whose omission is handled operationally by \textsc{Neglect}.
+%In the second form, no individual step is lost. Each $r\in\Rules(\pi)$ remains available; the agent can still decrypt if prompted, still pair, still compare, and every hypothesis is still known. What is forgotten is the sequence of steps to be executed in a certain order to achieve a certain functionality. An instance which is analogous to this is upon receiving an email, the (implicit) ceremony expects the human to verify that the sender is known and that the message is legitimate before acting on it. Users who fall for phishing rarely perform any single one of these checks; what they fail to summon is the checking procedure as such~\cite{vishwanath2018suspicion, downs2006decision}.
+%\fix{Luca}{This sounds like a neglect and indeed later we say it is.}
+
+Distinguishing the above two forms of procedural forgetting requires naming derivations as objects, which the defeasible formalism supports directly and the current Tamarin specification does not, as we argue next.
+
+%%%%%%%%%%%%%%%%%%
+\paragraph{The Implicit and the Explicit}
+
+Consider how much of a procedure survives in a Tamarin specification. In the current \XMen{} specification, if $\human$ knows $k$ and receives $\{\!|m|\!\}_k$, the next rule can match the encrypted message and the key and use $m$ without a separate decryption step; the specification never says ``now decrypt, then project''.The inferential steps of~\Cref{Def:Procedure} are thus absorbed into the matching of terms, and what remains explicit of a procedure is only its residue of internal actions, the checks recorded as action facts. Of the chain \emph{decrypt, extract, compare}, only \emph{compare} is represented as an explicit internal action; the specification, so to speak, knows more than it tells. This has two consequences for \textsc{Forget}. First, forgetting an \emph{explicit} step degenerates into the existing machinery: omitting a check that one has forgotten to perform has the same effect on the trace as neglecting it, 
+%\fix{Luca}{undefined} from neglecting it, 
+and indeed~\Cref{Alg:ForgetMutation1} already routes such cases into a triggered \textsc{Neglect}. Second, an implicit inferential step is not represented as an explicit action in the current operational specification, and therefore, cannot be selected directly by the present trace-mutation mechanism. Similarly, Tamarin does not provide a native prioritised-rule construct matching the superiority relation of Defeasible Logic. These behaviours could be encoded by adding suitable state facts and transitions, but doing so would extend the current operational state beyond $\K{\human}{i}$ and $\Forget_{\human}^{i}$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Compilation Mechanism}
+
+\label{subsec:compilation}
+The compilation maps the ceremony state at step $i$ to a defeasible theory $\Dtheory_{\human}^i=(F,R,{>})$, whose facts, the three rule types ($\rightarrow$, $\Rightarrow$, $\defeat$), and superiority relation (${>}$) are those of~\Cref{Subsec:DefeasibleLogic}.
+Starting from $F=\varnothing$, $R=\varnothing$, and ${>}=\varnothing$, we populate it as follows:
+\begin{itemize}
+    \item \textbf{Facts:} For every message $m \in \K{\human}{i}$, add $\Known(m) \in F$. For every normal derivation $\pi\in\Pi_{m}$ and every $\bar m \in\Blocked(\Hyp_\pi,\Forget_{\human}^{i})$, add $\Lapsed(\bar m)\in F$.
+    \item \textbf{Defeasible Derivation Rule:} For every normal derivation $\pi\in\Pi_m$ of a target $m$, add the following defeasible rule to $R_d$:
+    \[
+        d_\pi \;:\; \bigwedge_{h \in \Hyp_\pi}\Known(h)\;\defeas\;\Via(\K{\human}{i},\pi,m).
+    \]
+    The body holds exactly when $\mathit{Hyp}_\pi\subseteq K^i_H$, so $d_\pi$ is applicable precisely when all of $\pi$'s hypotheses are known; whether $\mathit{Via}(K^i_H,\pi,m)$ is then defeasibly provable depends on the opposing defeaters and on the superiority relation. A derivation resting on an unknown hypothesis never activates its rule.
+    \item \textbf{Strict Aggregation Rule:} For every $\pi\in\Pi_m$ of the target $m$, add to $R_s$ the following strict rule:
+    \[
+        r^{\mathit{use}}_{\pi,m} \;:\; \Via(\K{\human}{i}, \pi, m) \to \Usable(m).
+    \]
+    The rule is strict because the survival of a particular derivation is sufficient for usability. This does not make $\Usable(m)$ definitely provable when its $\Via$ premise is only defeasibly provable.
+
+    \item \textbf{Forgetting Defeater:} For a target $m$, every $\pi\in\Pi_m$, and every hypothesis $\bar m \in \Hyp_\pi$, add to $R_{\mathit{dft}}$ the following defeater:
+    \[
+        \omega_{\pi,\bar m} \;:\; \Lapsed(\bar m) \ \defeat\ \neg\Via(\K{\human}{i}, \pi, m),
+        \qquad \omega_{\pi,\bar m} > d_\pi .
+    \]
+    Emission ranges over \emph{every} hypothesis of $\pi$: the defeater is always present, and whether it fires is decided by its antecedent. It is applicable exactly when $+\partial\,\Lapsed(\bar m)$, i.e.\ when $\bar m \in \bigcup_{\pi\in\Pi_m}\Blocked(\Hyp_\pi, \Forget_\human^{i})$. Since $\omega_{\pi,\bar m}>d_\pi$, an applicable $\omega_{\pi,\bar m}$ defeats $d_\pi$ unless it is itself overruled by a superior reinstater. In the absence of such a reinstater, this yields $-\partial\,\Via(\K{\human}{i},\pi,m)$, removing $d_\pi$'s support without establishing $+\partial\,\neg\Via(\K{\human}{i},\pi,m)$. When $\bar m$ is not lapsed, $-\partial\,\Lapsed(\bar m)$ leaves $\omega_{\pi,\bar m}$ inapplicable and $d_\pi$ prevails, provided no other declarative or procedural defeater applies.
+    \end{itemize}
+
+%%%%%%%%%%%%%%%%%%
+\paragraph{Superiority Relation} 
+
+For the declarative-forgetting and cue-recovery components, the superiority relation contains two kinds of comparison. First, a declarative forgetting defeater overrules the default inference,
+\[
+    \omega_{\pi,\bar{m}} > d_{\pi},
+\]
+so that whenever $\pi$ relies on a blocked hypothesis $\bar{m}$, the lapse defeater intercepts the rule $d_\pi$ that would otherwise deduce $\Via(\K{\human}{i}, \pi, m)$. 
+Second, a matching reinstater (as we will show in~\Cref{Subsec:Cue}) overrules that forgetting defeater,
+\[
+    \rho_{\pi,\bar m,c}>\omega_{\pi,\bar m}.
+\]
+Because $\rho_{\pi,\bar m,c}$ is a defeasible rule rather than a defeater, it is admissible as a supporting rule for $\mathit{Via}(K^i_H,\pi,m)$; together with $\rho_{\pi,\bar m,c}>\omega_{\pi,\bar m}$, this re-establishes $+\partial\,\mathit{Via}(K^i_H,\pi,m)$ when every blocked hypothesis of $\pi$ has a matching present cue and no procedural defeater applies to $\pi$ (\Cref{Lem:PerHypothesis} and \Cref{Subsec:ProceduralForgetting}).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Generating the Cognitive Trace}
+\label{Subsec:CognitiveTrace}
+
+In \Cref{Alg:ForgetMutation2}, the Defeasible Logic formalism determines which candidate messages are usable and thereby guides the choice between preserving, replacing, and skipping the intended send. The associated proof structure explains this choice and constitutes the \emph{cognitive trace}. The current implementation of \XMen{}~2.0 does not invoke a Defeasible Logic solver: the algorithm specifies this decision procedure, but the cognitive trace is not currently generated automatically.
+%\fix{Luca}{So what do we do with it concretely?}
+
+After computing the defeasible conclusions of the theory, the resulting positive and negative proof tags, together with the rules that establish them, constitute the \emph{cognitive trace}. A positive tag is recorded with an applicable supporting rule and, for each applicable opposing defeater, the superior rule that overrules it; a negative tag is recorded with an applicable opposing defeater that no applicable superior rule overrules, or with the absence of any applicable supporting rule.
+\begin{itemize}
+    \item \emph{Usable Messages:} All target messages $m$ yielding $+ \partial \Usable(m)$. For each such message, the cognitive trace records the derivation that survives and, where a lapse was overruled, the reinstater that overruled the forgetting defeater.
+    \item \emph{Blocked Messages:} All target messages $m$ such that $-\partial\,\Via(\K{\human}{i},\pi,m)$ holds for every $\pi\in\Pi_m$, and hence $-\partial\,\Usable(m)$. Here, the trace explains why no normal derivation survives, distinguishing the absence of any derivation ($\Pi_m=\emptyset$) from declarative blockers, forgotten rules, and forgotten procedures.
+\end{itemize}
+Before evaluating the theory, declarative blockers generate candidate replacements; procedural blockers generate no additional candidates. If $+\partial\,\Usable(m_2)$, the intended send is preserved. Otherwise, each usable variant yields a \replace{} mutation; if none is usable, the send triggers \skipmutation{}. 
+
+In the following paragraph, we show how the Defeasible Theory compilation works in the \textit{derivability under forgetting} scenario, taking into consideration the Examples in~\Cref{Subsec:BlockedDerivations}.
+
+\begin{example}[Recast of~\Cref{Ex:Derivability1} in DL, a single blocked branch]
+\label{Ex:DL-Derivability1}
+
+Let $\K{\human}{i}=\{\,m_1,\ \{\!|m_1|\!\}_{m_2},\ m_2\,\}$ and $\Forget_{\human}^{i}=\{\,\{\!|m_1|\!\}_{m_2}\,\}$, with target $m_1$.
+
+\noindent\emph{Compiled theory $\Dtheory_{\human}^{i}=(F,R,{>})$:}
+\begin{align*}
+F:\quad & \Known(m_1),\ \Known(\{\!|m_1|\!\}_{m_2}),\ \Known(m_2),\ \Lapsed(\{\!|m_1|\!\}_{m_2}).\\[2pt]
+R_d:\quad & d_{\pi_1}: \Known(m_1)\Rightarrow\Via(\K{\human}{i},\pi_1,m_1),\\
+          & d_{\pi_2}: \Known(\{\!|m_1|\!\}_{m_2})\wedge\Known(m_2)
+                        \Rightarrow\Via(\K{\human}{i},\pi_2,m_1).\\[2pt]
+R_s:\quad & r^{\mathit{use}}_{\pi_1,m_1}: \Via(\K{\human}{i},\pi_1,m_1)\to\Usable(m_1),\\
+          & r^{\mathit{use}}_{\pi_2,m_1}: \Via(\K{\human}{i},\pi_2,m_1)\to\Usable(m_1).\\[2pt]
+R_{\mathit{dft}}:\quad
+          & \omega_{\pi_2,\{\!|m_1|\!\}_{m_2}}:
+              \Lapsed(\{\!|m_1|\!\}_{m_2})\ \defeat\ \neg\Via(\K{\human}{i},\pi_2,m_1),\quad
+              \omega_{\pi_2,\{\!|m_1|\!\}_{m_2}}>d_{\pi_2}.
+\end{align*}
+
+\noindent\emph{Trace:}
+The rule $d_{\pi_1}$ fires unopposed, yielding $+\partial\,\Via(\K{\human}{i},\pi_1,m_1)$. For $\pi_2$, although $d_{\pi_2}$ is applicable, the fact $\Lapsed(\{\!|m_1|\!\}_{m_2})$ activates the superior defeater $\omega_{\pi_2,\{\!|m_1|\!\}_{m_2}}$, so $-\partial\Via(\K{\human}{i},\pi_2,m_1)$. Aggregation through $r^{\mathit{use}}_{\pi_1,m_1}$ gives $+\partial\Usable(m_1)$: the message $m_1$ survives through the direct branch. Cases~2 and~3 reproduce the identical $\Blocked$ set, since there is no key in $\Forget_{\human}^{i}$ from which to decrypt $\{\!|m_1|\!\}_{\,m_2}$.
+\end{example}
+
+\begin{example}[Recast of~\Cref{Ex:Derivability2} in DL, closure reaches the direct branch]
+\label{Ex:DL-Derivability2}
+Let $\K{\human}{i}=\{\,m_1,\ \{\!|m_1|\!\}_{m_2},\ m_2\,\}$ and $\Forget_{\human}^{i}=\{\,\{\!|m_1|\!\}_{m_2},\ m_2\,\}$. The target $m_1$, the derivations $\pi_1,\pi_2$, the $\Known$ facts, the defeasible rules $R_d$, and the strict rules $R_s$ are exactly those of~\Cref{Ex:DL-Derivability1}; only the $\Lapsed$ facts differ, and with them the defeaters that fire, as we trace per case.
+ 
+\smallskip\noindent\emph{Case~1 and Case~2:}
+$\Blocked(\Hyp_{\pi_1},\Forget_{\human}^{i})=\varnothing$, while $\Blocked(\Hyp_{\pi_2},\Forget_{\human}^{i})=\{\{\!|m_1|\!\}_{m_2},m_2\}$. Thus $\bigcup_{\pi\in\Pi_{m_1}}\Blocked(\Hyp_\pi,\Forget_{\human}^{i})=\{\{\!|m_1|\!\}_{m_2},m_2\}$, so we add $\Lapsed(\{\!|m_1|\!\}_{m_2})$ and $\Lapsed(m_2)$ to $F$. These activate the two defeaters
+\[
+    \omega_{\pi_2,\{\!|m_1|\!\}_{m_2}}:\ \Lapsed(\{\!|m_1|\!\}_{m_2})\ \defeat\ \neg\Via(\K{\human}{i},\pi_2,m_1),
+    \qquad
+    \omega_{\pi_2,m_2}:\ \Lapsed(m_2)\ \defeat\ \neg\Via(\K{\human}{i},\pi_2,m_1),
+\]
+both superior to $d_{\pi_2}$. No $\Lapsed(m_1)$ is present, so $\omega_{\pi_1,m_1}$ stays inapplicable and $d_{\pi_1}$ prevails.
+ 
+\noindent\emph{Trace:} $+\partial\,\Via(\K{\human}{i},\pi_1,m_1)$ and $-\partial\,\Via(\K{\human}{i},\pi_2,m_1)$, hence, $+\partial\,\Usable(m_1)$ --- $m_1$ survives through the direct branch even though both hypotheses of $\pi_2$ are forgotten.
+ 
+\noindent\emph{Case~3:}
+The full Dolev-Yao closure of $\Forget_{\human}^{i}$ decrypts $\{\!|m_1|\!\}_{m_2}$ with $m_2$, so $\Forget_{\human}^{i}\vdash m_1$ and therefore, $m_1\in\Blocked(\Hyp_{\pi_1},\Forget_{\human}^{i})$. Now $\bigcup_{\pi\in\Pi_{m_1}}\Blocked(\Hyp_\pi,\Forget_{\human}^{i})=\{m_1,\{\!|m_1|\!\}_{m_2},m_2\}$, so $\Lapsed(m_1)$ also joins $F$ and activates the defeater on the \emph{direct} branch,
+\[
+\omega_{\pi_1,m_1}:\ \Lapsed(m_1)\ \defeat\ \neg\Via(\K{\human}{i},\pi_1,m_1),
+\qquad \omega_{\pi_1,m_1}>d_{\pi_1},
+\]
+in addition to $\omega_{\pi_2,\{\!|m_1|\!\}_{m_2}}$ and $\omega_{\pi_2,m_2}$. Now every branch is defeated: $-\partial\,\Via(\K{\human}{i},\pi_1,m_1)$ and $-\partial\,\Via(\K{\human}{i},\pi_2,m_1)$, so $-\partial\,\Usable(m_1)$. The closure has turned a still-known message into a blocked one purely through the choice of forgetting semantics.
+\end{example}
+ 
+\begin{example}[Recast of~\Cref{Ex:Derivability3} in DL, a forgotten pair]
+\label{Ex:DL-Derivability3}
+Let $\K{\human}{i}=\{\,\langle m_1,m_2\rangle,\ m_1,\ m_2\,\}$ and $\Forget_{\human}^{i}=\{\,\langle m_1,m_2\rangle\,\}$. Consider target $m_1$. The two normal derivations of $m_1$ are $\pi_1$, the direct use of $m_1\in\K{\human}{i}$ with $\Hyp_{\pi_1}=\{m_1\}$, and $\pi_2$, first projection of $\langle m_1,m_2\rangle$ with $\Hyp_{\pi_2}=\{\langle m_1,m_2\rangle\}$.
+ 
+\noindent\emph{Compiled theory:}
+\begin{align*}
+F:\quad & \Known(\langle m_1,m_2\rangle),\quad \Known(m_1),\quad \Known(m_2).\\[2pt]
+R_d:\quad & d_{\pi_1}: \Known(m_1)\Rightarrow\Via(\K{\human}{i},\pi_1,m_1),\qquad d_{\pi_2}: \Known(\langle m_1,m_2\rangle)\Rightarrow\Via(\K{\human}{i},\pi_2,m_1).\\[2pt]
+R_s:\quad & r^{\mathit{use}}_{\pi_1,m_1}: \Via(\K{\human}{i},\pi_1,m_1)\to\Usable(m_1),\qquad r^{\mathit{use}}_{\pi_2,m_1}: \Via(\K{\human}{i},\pi_2,m_1)\to\Usable(m_1).
+\end{align*}
+The $\Known$ facts and rules above hold in every case; the $\Lapsed$ facts, and hence the defeaters that fire, depend on the closure.
+ 
+\noindent\emph{Case~1 (Pair atomic):}
+$\Blocked(\Hyp_{\pi_1},\Forget_{\human}^{i})=\varnothing$ and $\Blocked(\Hyp_{\pi_2},\Forget_{\human}^{i})=\{\langle m_1,m_2\rangle\}$, so only $\Lapsed(\langle m_1,m_2\rangle)$ is added to $F$, and just
+\[
+    \omega_{\pi_2,\langle m_1,m_2\rangle}:\ \Lapsed(\langle m_1,m_2\rangle)\ \defeat\ \neg\Via(\K{\human}{i},\pi_2,m_1), \qquad \omega_{\pi_2,\langle m_1,m_2\rangle}>d_{\pi_2},
+\]
+fires. 
+
+\noindent\emph{Trace:} $+\partial\,\Via(\K{\human}{i},\pi_1,m_1)$, $-\partial\,\Via(\K{\human}{i},\pi_2,m_1)$, so $+\partial\,\Usable(m_1)$; even though the projection branch is lost, the direct occurrence keeps $m_1$ usable.
+ 
+\noindent\emph{Case~2 and Case~3 (Pair decomposable):}
+Pairing closure of $\Forget_{\human}^{i}$ projects the forgotten pair, so $\Forget_{\human}^{i}\vdash m_1$ and $m_1\in\Blocked(\Hyp_{\pi_1},\Forget_{\human}^{i})$. Now $\Lapsed(m_1)$ joins $\Lapsed(\langle m_1,m_2\rangle)$ in $F$, activating a defeater on the direct branch in addition to the projection branch,
+\[
+\omega_{\pi_1,m_1}:\ \Lapsed(m_1)\ \defeat\ \neg\Via(\K{\human}{i},\pi_1,m_1), \qquad \omega_{\pi_2,\langle m_1,m_2\rangle}:\ \Lapsed(\langle m_1,m_2\rangle)\ \defeat\ \neg\Via(\K{\human}{i},\pi_2,m_1),
+\]
+both superior to their rules. Now $-\partial\,\Via(\K{\human}{i},\pi_1,m_1)$ and $-\partial\,\Via(\K{\human}{i},\pi_2,m_1)$, hence, $-\partial\,\Usable(m_1)$ (the separate compilation for target $m_2$ similarly derives $-\partial\,\Usable(m_2)$, because $\Forget_{\human}^{i}\vdash m_2$ places $\Lapsed(m_2)$ in its fact set): although $m_1$ and $m_2$ remain in $\K{\human}{i}$ as facts, forgetting the pair under a decomposable closure makes them \emph{unusable}.
+\end{example}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Cue Set and Reinstater}
+\label{Subsec:Cue}
+%\fix{Luca}{How is a cue part of a ceremony? Is it a sub-ceremony? A parallel/optional one?}
+
+A cue is a contextual stimulus perceived by $\human$ during the ceremony, such as a familiar interface or a displayed password hint. It may already be present or become available through an interaction, such as an optional hint request. The interaction belongs to the ceremony; the cue model records the resulting cue presence as input to the defeasible theory.
+
+The cue's effectiveness and its scope are governed by the \emph{encoding specificity principle}~\cite{tulving1973encoding}; a cue retrieves a target to the extent that the information it carries was co-encoded with that target. Two properties of the construction follow: first, association is \emph{specific}: a cue reinstates only the message(s) it was (perceived to be) co-encoded with, so a reinstater is \emph{targeted}. Second, association is \emph{perceived}; a spoofed page is effective precisely because it overlaps the encoding context of the credential, though it is not the genuine page. The recovery is moreover \emph{within-state}: it changes what is \emph{accessible} at state~$i$ without altering $\K{\human}{i}$ or $\Forget_\human^{i}$. The within-state vs.\ across-state distinction is exactly the accessibility vs.\ availability distinction, which is why the reinstater is the faithful model of cue-triggered recall. To give the cues a source, we make their derivation explicit through a \emph{cue model}.
+
+\begin{definition}[Cue model]
+\label{Def:CueModel}
+    A \emph{cue model} for an agent $\human$ at state $i$ is a tuple
+    \[
+        \cuemodel_\human^{i} \;=\; \bigl(\, \Cueset,\; \Assoc_{\human}^{i},\; \Pres_{\human}^{i} \,\bigr),
+    \]
+    where
+    \begin{itemize}[nosep]
+        \item $\Cueset$ is a finite set of \emph{cue identifiers}. A cue identifier is \emph{not} a message, and the logic attaches no provenance to it, its logical role is to trigger a reinstater.
+        \item $\Assoc_{\human}^{i} \subseteq \Cueset \times \K{\human}{i}$ is the \emph{association relation}: $(c, \bar{m}) \in \Assoc_{\human}^{i}$ means that $\human$ perceives $c$ as overlapping the encoding context of $\bar{m}$, so that perceiving $c$ can trigger retrieval of $\bar{m}$. The codomain is $\K{\human}{i}$ because one can be cued only for a message one has encoded. Concretely, $\Assoc_{\human}^{i}$ is a finite lookup table, a \emph{cue dictionary} keyed by cue identifier, each key mapped to the message(s) it can trigger, which become effective once those messages are forgotten.
+        \item $\Pres_{\human}^{i} \subseteq \Cueset$ is the set of cues \emph{present} to $\human$ at state~$i$. It is supplied by the ceremony environment and may change between states. Where the adversary controls a cue-bearing interface or communication channel, the scenario specifies the interactions that produce these cues.
+        \end{itemize}
+\end{definition}
+
+For a target $m$, the cue model adds to $F$ the facts
+\[
+  \bigl\{\,
+    \contextcue{c}{\bar m}
+    \bigm|
+    c\in\Pres_{\human}^{i},\
+    (c,\bar m)\in\Assoc_{\human}^{i},\
+    \bar m\in
+    \bigcup_{\pi\in\Pi_m}
+    \Blocked(\Hyp_\pi,\Forget_{\human}^{i})
+  \,\bigr\}.
+\]
+The use of
+\[
+  \bigcup_{\pi\in\Pi_m}   \Blocked(\Hyp_\pi,\Forget_{\human}^{i})
+\]
+rather than $\Forget_{\human}^{i}$ ensures that cues may also recover hypotheses blocked through the closure conditions of Cases~2 and 3, rather than only hypotheses explicitly contained in the \Forget{} set. Under Case~1, a hypothesis of $\pi$ is blocked exactly when it belongs to $\Forget_{\human}^{i}$, since
+\[
+  \Blocked(\Hyp_\pi,\Forget_{\human}^{i}) = \Hyp_\pi\cap\Forget_{\human}^{i}.
+\]
+
+We deploy a cue through a \emph{reinstater}: a higher-priority defeasible rule that re-supports the blocked derivation. For every $\pi\in\Pi_m$, every $\bar m\in\Blocked(\Hyp_\pi,\Forget_{\human}^{i})$, and every $c$ such that $(c,\bar m)\in\Assoc_{\human}^{i}$, the compilation emits the uniquely labelled rule
+\[
+  \rho_{\pi,\bar m,c}: \contextcue{c}{\bar m}  \defeas \Via(\K{\human}{i},\pi,m), \qquad   \rho_{\pi,\bar m,c}>\omega_{\pi,\bar m}.
+\]
+For each triple $(\pi,\bar m,c)$ satisfying the emission conditions above, the reinstater rule belongs to the compiled theory whether or not $c\in\Pres^{i}$. Its existence therefore depends on the blockedness and association conditions, while cue presence controls only its applicability. Specifically, its antecedent is available, and hence the rule is applicable, exactly when the corresponding cue fact $\contextcue{c}{\bar m}$ is included in $F$.
+
+A distinct reinstater is emitted for each triple $(\pi,\bar m,c)$. Several cues associated with the same blocked message therefore provide alternative supporting rules for the same $\Via$ atom, and each such rule outranks $\omega_{\pi,\bar m}$. A reinstater associated with a different blocked message does not outrank this defeater. Consequently, a derivation blocked on several hypotheses requires a matching present cue for each blocked hypothesis.
+
+Adding an irrelevant cue fact may of course make that cue atom definitely and defeasibly provable. Nevertheless, adding such a fact is conservative with respect to the compilation observables for target $m$: if it activates no reinstater relevant to $m$, all tagged conclusions whose atoms have the form $\Via(\K{\human}{i}, \pi,m)$ or $\Usable(m)$ remain unchanged.
+
+\begin{lemma}[Per-hypothesis recovery]
+\label{Lem:PerHypothesis}
+    Let $\pi$ be a derivation of $m$ with $\Blocked(\Hyp_\pi, \Forget_\human^{i}) = \{\bar{m}_1, \ldots, \bar{m}_n\}$, where $\bar{m}_1,\ldots,\bar{m}_n$ is any enumeration of the blocked hypotheses of $\pi$, and suppose that no procedural block applies to $\pi$. Then $+\partial\,\Via(\K{\human}{i}, \pi, m)$ holds if and only if, for every $s \in \{1, \ldots, n\}$, some present cue $c_s$ with $(c_s, \bar{m}_s) \in \Assoc_{\human}^{i}$ triggers the reinstater $\rho_{\pi,\bar{m}_s, c_s}$. A single missing cue leaves $\Via(\K{\human}{i}, \pi, m)$ blocked.\end{lemma}
+\begin{proof}
+    For each $s$, the construction generates $\omega_{\pi,\bar{m}_s}$ with $\omega_{\pi,\bar{m}_s} > d_\pi$, so $d_\pi$ alone cannot establish $\Via(\K{\human}{i}, \pi, m)$. The rules superior to $\omega_{\pi,\bar{m}_s}$ are precisely the matching reinstaters $\rho_{\pi,\bar{m}_s,c}$; no $\rho_{\pi,\bar{m}_{s'},c'}$ with $s' \neq s$ outranks it. Hence $\omega_{\pi,\bar{m}_s}$ is overruled iff some $\rho_{\pi,\bar{m}_s,c_s}$ is applicable, i.e.\ a cue $\contextcue{c_s}{\bar{m}_s}$ is present. If for some $s$ no such cue is present, $\omega_{\pi,\bar{m}_s}$ stands, attacks $\Via(\K{\human}{i}, \pi, m)$, and is outranked by no applicable supporting rule; thus $+\partial\,\Via(\K{\human}{i}, \pi, m)$ fails. Conversely, if every $\omega_{\pi,\bar m_s}$ is overruled by an applicable matching reinstater, the surviving reinstaters support $\mathit{Via}(K^i_H,\pi,m)$ and, no procedural defeater applying, $+\partial\,\mathit{Via}(K^i_H,\pi,m)$ holds. If $n=0$, the right-hand side holds nonetheless: no forgetting defeater of $\pi$ is applicable, since $\mathit{Lapsed}(\bar m)\notin F$ for every $\bar m\in\mathit{Hyp}_\pi$, and the applicable rule $d_\pi$ yields $+\partial\,\mathit{Via}(K^i_H,\pi,m)$.
+    \end{proof}
+
+%%%%%%%%%%%%%%%%%%
+\paragraph{Where Effectiveness Is Recorded}
+The construction does not itself decide whether a cue is effective. An applicable reinstater defeats the forgetting defeater, so any cue recorded as present and associated with a blocked hypothesis is treated as sufficient to reinstate it. Effectiveness, in the sense of the encoding specificity principle above, is recorded in the two components of $\cuemodel_{\human}^{i}$ that the compilation reads. A cue that does not work is therefore instantiated in one of two ways: it is omitted from $\Pres_{\human}^{i}$, when $\human$ does not perceive it, or it is included in $\Pres_{\human}^{i}$ but absent from $\Assoc_{\human}^{i}$, when $\human$ perceives it without its overlapping the encoding context of the blocked hypothesis. A prompt that asks whether an action should proceed is of the second kind, whereas one that displays the value at risk directs attention to that value~\cite{bravolillo2013attention}. What an instantiation may not do is record a cue in both components and expect the analysis to discount it.
+
+Payment ceremonies illustrate this behaviour. A payer given an account number to pay does not normally verify it against an independent record~\cite{drimer2009optimised}. In the United Kingdom, Confirmation of Payee checks the name entered by the payer against the name held on the destination account and reports the outcome before the payment is confirmed; the Payment Systems Regulator extended the requirement to nearly $400$ firms, and since October 2024 it covers over $99\%$ of Faster Payments and CHAPS transactions~\cite{psrcop2024}. An equivalent check has been required in the euro area since 9 October 2025~\cite{ipr2024}. A check of this kind is produced by the payer's provider rather than by the document carrying the payment request, so the corresponding cue is present even when that document has been altered. Where the payer instead authorises a payment by scanning a code that itself encodes the beneficiary account, the destination and what is shown about it derive from the same document, and an attacker who replaces the document replaces what the payer is shown~\cite{vidas2013qrishing,kharraz2014optical}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Procedural Forgetting in Defeasible Logic}
+\label{Subsec:ProceduralDefeasible}
+
+We describe procedural forgetting by the pair
+\[
+    \PForget_{\human}^{i} =\bigl(\Rbar_{\human}^{i},\Pibar_{\human}^{i}\bigr), \qquad \Rbar_{\human}^{i}\subseteq\mathcal R, \qquad \Pibar_{\human}^{i}\subseteq\mathcal P. 
+\]
+Here, $\mathcal P$ is the set of names of inferential procedures, with $\Pi_m\subseteq\mathcal P$ for each target $m$. The first component contains the forgotten inference rules, the second contains the normal derivations forgotten as wholes. A pair keeps a forgotten rule separate from a forgotten procedure. As established in~\Cref{Def:Procedure}, this compilation represents normal derivations through $\Via$; forgetting an explicit role-script action remain in the operational \textsc{Neglect} case.
+
+For every normal derivation $\pi$, define its procedural blockers by
+\begin{equation}
+\label{Eq:ProceduralBlocked}
+\begin{split}
+\Blocked_{P}(\pi,\PForget_{\human}^{i}) := {}& \{\mathsf{Rule}(r) \mid r\in\Rules(\pi) \cap\Rbar_{\human}^{i}\}\\
+     &{}\cup 
+     \begin{cases}
+       \{\mathsf{Proc}(\pi)\},
+       & \text{if }\pi\in\Pibar_{\human}^{i},\\
+       \varnothing,&\text{otherwise.}
+     \end{cases}
+\end{split}
+\end{equation}
+
+The compilation of~\Cref{subsec:compilation} is extended as follows.
+\begin{itemize}
+    \item \textbf{Procedural Lapse Facts:} For every $r\in\Rbar_{\human}^{i}$, add $\Lapsed(\mathsf{Rule}(r))\in F$; for every $\pi\in\Pibar_{\human}^{i}$, add $\Lapsed(\mathsf{Proc}(\pi))\in F$. These facts are generated directly from the procedural state: a competence remains forgotten even at a state in which no current target happens to use it.
+
+    \item \textbf{Rule-level Forgetting Defeater:} For a target $m$, every $\pi\in\Pi_m$, and every $r\in\Rules(\pi)$, add
+    \[
+        \omega^{\mathsf{rule}}_{\pi,r}: \Lapsed(\mathsf{Rule}(r)) \ \defeat\ \neg\Via(\K{\human}{i},\pi,m), \qquad \omega^{\mathsf{rule}}_{\pi,r}>d_\pi.
+    \]
+
+    \item \textbf{Procedure-level Forgetting Defeater:} For a target $m$ and every $\pi\in\Pi_m$, add
+    \[
+        \omega^{\mathsf{proc}}_{\pi}: \Lapsed(\mathsf{Proc}(\pi)) \ \defeat\ \neg\Via(\K{\human}{i},\pi,m), \qquad \omega^{\mathsf{proc}}_{\pi}>d_\pi.
+    \]
+\end{itemize}
+An applicable procedural defeater blocks the derivation $\pi$. Since the present cue model is message-specific and generates no procedural reinstaters, a procedural lapse yields $-\partial\,\Via(\K{\human}{i},\pi,m)$ whenever no other undefeated rule supports the same $\Via$ atom. The two procedural forms differ in scope: $\Lapsed(\mathsf{Rule}(r))$ activates a defeater in every derivation whose $\Rules$ set contains $r$, whereas $\Lapsed(\mathsf{Proc}(\pi))$ activates only the defeater for the named derivation $\pi$.
+
+%%%%%%%%%%%%%%%%%%
+\paragraph{State Update and Recovery}
+
+The procedural state evolves explicitly. A rule-level lapse and a whole-procedure lapse update the corresponding component by
+\[
+    \Rbar_{\human}^{i+1} =\Rbar_{\human}^{i}\cup\{r\}, \qquad \Pibar_{\human}^{i+1} =\Pibar_{\human}^{i}\cup\{\pi\},
+\]
+respectively; the component not affected by the event is unchanged. In the absence of a lapse or recovery event, both components persist. If the model includes relearning or rehearsal, recovery is represented by set difference. For example,
+\[
+    \Rbar_{\human}^{i+1} =\Rbar_{\human}^{i}\setminus\{r\}, \qquad \Pibar_{\human}^{i+1} =\Pibar_{\human}^{i}\setminus\{\pi\}.
+\]
+A within-state cue does not modify these persistent sets. Procedural cue recovery is outside the current message-specific cue model.
+
+%%%%%%%%%%%%%%%%%%
+\paragraph{Downstream Mutation Decision}
+
+For a target $m$, the decision layer first checks whether some $\pi\in\Pi_m$ has $+\partial\,\Via(\K{\human}{i},\pi,m)$. If so, $+\partial\,\Usable(m)$ preserves the intended send. If $-\partial\,\mathit{Via}(K^i_H,\pi,m)$ is derived for every $\pi\in\Pi_m$, no normal derivation of $m$ survives the declarative and procedural blockers, since $\Pi_m$ contains all of them, and $-\partial\,\mathit{Usable}(m)$ follows. A message substitution is admissible only when the resulting candidate, generated in $T$ for a declarative blocker (\Cref{Subsec:AlgorithmDL}), is itself proved usable under both declarative and procedural constraints; replacing a hypothesis does not by itself restore a forgotten competence. If no such candidate exists, the intended send triggers \skipmutation{}. This explains how procedural forgetting connects to~\Cref{Alg:ForgetMutation1} without treating rule or procedure identifiers as replaceable messages.
+
+\begin{example}[Rule-level vs.\ procedure-level forgetting in the Bank Login ceremony]
+\label{Ex:ProceduralForgetting}
+Consider the state reached after $\human$ has received the challenge
+\[ 
+    \{\langle N_H,N_B\rangle\}_{K_H}, 
+\]
+with
+\[ 
+    \K{\human}{i}\supseteq\bigl\{H,PW,K_H^{-1},N_H,\{\langle N_H,N_B\rangle\}_{K_H}\bigr\}. 
+\]
+The target message is
+\[ 
+    m_2= \{\!|\langle H,PW\rangle|\!\}_{\langle N_H,N_B\rangle}.
+\]
+Consider the normal derivation $\pi$ of $m_2$, \ $\Pi_{m_2}=\{\pi\}$:
+\[
+\frac{
+    \displaystyle\frac{H\qquad PW}{\langle H,PW\rangle}\;\RuleLabel{pair}
+    \qquad
+    \displaystyle\frac{
+        \{\langle N_H,N_B\rangle\}_{K_H}\qquad K_H^{-1}
+    }{\langle N_H,N_B\rangle}\;\RuleLabel{adec}
+}{m_2}\;\RuleLabel{senc}.
+\]
+
+Thus, 
+\[
+    \Hyp_\pi=
+    \{H,PW,K_H^{-1},\{\langle N_H,N_B\rangle\}_{K_H}\},
+    \qquad
+    \Rules(\pi)=\{\RuleLabel{adec},\RuleLabel{pair},\RuleLabel{senc}\}.
+\]
+The role-script additionally prescribes an internal action $\alpha$ that compares the first component of the decrypted challenge with the nonce $N_H$ sent earlier. Since $\alpha$ is explicit rather than an inferential step of $\pi$, forgetting $\alpha$ is handled by \textsc{Neglect}, not by the two defeaters below.
+
+The compilation contains $\Known(h)$ for every $h\in\K{\human}{i}$, together with 
+\[
+    d_\pi: \bigwedge_{h\in\Hyp_\pi}\Known(h) \ \defeas \Via(\K{\human}{i},\pi,m_2) 
+\]
+and the strict aggregation rule
+\[
+    r^{\mathit{use}}_{\pi,m_2}: \Via(\K{\human}{i},\pi,m_2) \to \Usable(m_2),
+\]
+as specified in~\Cref{subsec:compilation}.
+
+\begin{enumerate}
+    \item[a.] \emph{Forgetting an inference rule.} Let
+    \[
+        \PForget_{\human}^{i}
+        =(\{\RuleLabel{senc}\},\varnothing).
+    \]
+    The lapse fact $\Lapsed(\mathsf{Rule}(\RuleLabel{senc}))$ activates
+    \[
+        \omega^{\mathsf{rule}}_{\pi,\RuleLabel{senc}}:
+        \Lapsed(\mathsf{Rule}(\RuleLabel{senc}))
+        \ \defeat\ \neg\Via(\K{\human}{i},\pi,m_2),
+        \qquad \omega^{\mathsf{rule}}_{\pi,\RuleLabel{senc}}>d_\pi.
+    \]
+    Hence $-\partial\,\Via(\K{\human}{i},\pi,m_2)$. The same lapse blocks every other normal derivation using $\RuleLabel{senc}$, for any target. The message $m_2$ is unusable if all of its normal derivations use that rule. If another derivation survives without using it, $m_2$ remains usable.
+
+    \item[b.] \emph{Forgetting the derivation as a whole.} Let
+    \[
+        \PForget_{\human}^{i}=(\varnothing,\{\pi\}).
+    \]
+    The lapse fact $\Lapsed(\mathsf{Proc}(\pi))$ activates
+    \[
+        \omega^{\mathsf{proc}}_\pi:
+        \Lapsed(\mathsf{Proc}(\pi))
+        \ \defeat\ \neg\Via(\K{\human}{i},\pi,m_2),
+        \qquad \omega^{\mathsf{proc}}_\pi>d_\pi.
+    \]
+    Again $-\partial\,\Via(\K{\human}{i},\pi,m_2)$, but every other normal derivation $\pi'$ remains unaffected by this lapse, including those using $\RuleLabel{senc}$. The agent still knows how to apply that rule.
+\end{enumerate}
+
+If $\Pi_{m_2}=\{\pi\}$, both cases yield $-\partial\,\Usable(m_2)$. Since there is no declarative lapse, $T=\{m_2\}$, and the intended send then triggers \skipmutation{}. If other normal derivations exist, the outcome depends on whether any of them survives. In either case, every element of $\K{\human}{i}$ remains known.
+\end{example}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Algorithm for Defeasible Logic}
+\label{Subsec:AlgorithmDL}
+
+The state-update and decision procedure for the defeasible account is summarised in~\Cref{Alg:ForgetMutation2}. It keeps the control structure of~\Cref{Alg:ForgetMutation1} and changes only what decides. The state update distinguishes the type of lapse: a declarative lapse updates the \Forget{} set and the resulting knowledge state, exactly as in~\Cref{Alg:ForgetMutation1}, whereas a procedural lapse records either a forgotten inference-rule label in $\Rbar_{\human}^{i}$ or a forgotten procedure in $\Pibar_{\human}^{i}$; a message that is used in an explicit internal action is routed to \neglect{} unchanged, since explicit actions stay operational (\Cref{Subsec:ProceduralForgetting}). The candidate-target step then generates the same variant space that \Cref{Alg:ForgetMutation1} builds from the replacement sets $R_{\bar{m}}$, but only enumerates it: $T$ collects the intended target $m_2$ together with every syntactic variant $m_2[C]$. Once the Neglect case has been handled and $T$ generated, the choice between preserving, replacing and skipping the send is taken on the tagged conclusions of one compiled theory, with $m_2$ preferred whenever it is usable. The decision is therefore complete relative to $T$: a continuation that keeps a hypothesis recovered by a cue and replaces another is not generated.
+
+In the algorithm below, the state-update and re-acquisition rules of \Cref{Alg:ForgetMutation1,Subsec:Algorithm} are applied before candidate generation.  Accordingly, $\Pi_t$ always denotes the normal derivations of $t$ from the mutated successor knowledge $[\![\K{\human}{i+1}]\!]^\mu$.
+The compiler receives that knowledge explicitly and reads $\mathit{Forget}^{i+1}_H$, $\mathit{PForget}^{i+1}_H$, and $\mathcal{C}^{i+1}_H$ as the remaining state components. In the rest of this section and in \Cref{Subsec:PaymentFormalModelDL}, $K^{i+1}_H$ in $\mathit{Known}$ facts and in the first argument of $\mathit{Via}$ stands for $[\![K^{i+1}_H]\!]^{\mu}$.
+
+
+\begin{algorithm*}[htbp]
+\caption{$\mutation_{\forget{}-DL}^{\human}$: Forgetting in transition $i$ under Defeasible Logic}
+\label{Alg:ForgetMutation2}
+\begin{algorithmic}[1]
+    \State Consider transition $i$ and a lapse event $\ell$:
+    $\AgSt(\human, i, \K{\human}{i}), \Pre_i, \rcv(\human, l_1, A_1, m_1)
+    \xlongrightarrow{a}
+    \AgSt(\human, i+1, \K{\human}{i+1}), \Post_{i+1},
+    \snd(\human, l_2, A_2, m_2)$
+    \State $\Forget_{\human}^{i+1} := \Forget_{\human}^{i}$;\quad
+           $\Rbar_{\human}^{i+1} := \Rbar_{\human}^{i}$;\quad
+           $\Pibar_{\human}^{i+1} := \Pibar_{\human}^{i}$;\quad
+           $[\![\K{\human}{i+1}]\!]^\mu := \K{\human}{i} \cup \{m_1\}$
+        \Comment{initial successor state}
+    \If{$\ell=m$ is a message}
+        \Comment{declarative lapse, as in \Cref{Alg:ForgetMutation1}}
+        \State $\Forget_{\human}^{i+1} := \Forget_{\human}^{i}\cup\{m\}$
+        \If{$m=m_1$}
+            \State $[\![\K{\human}{i+1}]\!]^\mu := \K{\human}{i}$
+                \Comment{$\human$ forgets the message just received, $m_1$; knowledge remains unchanged}
+        \Else
+            \State $\Forget_{\human}^{i+1} := \Forget_{\human}^{i}\cup\{m\}$
+            \State $[\![\K{\human}{i+1}]\!]^\mu := \K{\human}{i}\cup\{m_1\}$
+                \Comment{$\human$ forgets a message already in their knowledge and the knowledge is updated with the message just received}
+        \EndIf
+                
+        \If{$m$ is used in $a$}
+            \State Trigger the \neglect{} mutation on transition $i$ as in
+                   \Cref{Alg:ForgetMutation1}, and \textbf{return}
+            \Comment{the internal action cannot be performed}
+        \EndIf
+    \ElsIf{$\ell=r\in\mathcal R$ is an inference rule}
+        \State $\Rbar_{\human}^{i+1} := \Rbar_{\human}^{i}\cup\{r\}$
+            \Comment{blocks every $\pi$ such that $r\in\Rules(\pi)$}
+    \ElsIf{$\ell=\pi\in\mathcal P$ is a procedure}
+        \State $\Pibar_{\human}^{i+1} := \Pibar_{\human}^{i}\cup\{\pi\}$
+            \Comment{blocks only $\pi$; its rule competences remain available}
+    \EndIf
+    \State Apply the re-acquisition update of \Cref{Subsec:Algorithm}, if applicable
+        \Comment{complete the inherited state update before deriving targets}
+
+    \Statex \textit{Candidate targets}
+        \Comment{the variant space of \Cref{Alg:ForgetMutation1}}
+    \State $T:=\{m_2\}$
+    \State $\Pi_{m_2}:=\{\,\pi\mid
+           \pi\text{ is a normal derivation of }m_2
+           \text{ from }[\![\K{\human}{i+1}]\!]^\mu\,\}$
+        \Comment{derivations use the mutated successor knowledge}
+    \For{each $\pi\in\Pi_{m_2}$ with
+          $\Blocked(\Hyp_\pi,\Forget_{\human}^{i+1})\neq\varnothing$}
+        \State for each
+               $\bar m\in\Blocked(\Hyp_\pi,\Forget_{\human}^{i+1})$:
+        \Statex \hspace{\algorithmicindent}
+               $R_{\bar m}:=\{\,\bar m'\in[\![\K{\human}{i+1}]\!]^\mu
+               \mid \bar m'\notin\Forget_{\human}^{i+1},\ 
+               \mathit{format}(\bar m')=\mathit{format}(\bar m),\ 
+               \bar m'\text{ has the same label as }\bar m\,\}$
+        \State for each
+               $C\in\displaystyle\prod_{\bar m\in
+               \Blocked(\Hyp_\pi,\Forget_{\human}^{i+1})}R_{\bar m}$:
+               $T:=T\cup\{m_2[C]\}$
+            \Comment{$m_2[C]$ replaces every blocked hypothesis according to $C$}
+    \EndFor
+
+    \Statex \textit{Decision}
+    \State $D:=\mathsf{compile}\bigl(\human,i+1,T,
+           [\![\K{\human}{i+1}]\!]^\mu\bigr)$
+        \Comment{uses the updated lapse, procedural, and cue states at $i+1$}
+    \State Compute the tagged conclusions of $D$
+        \Comment{the cognitive trace of \Cref{Subsec:CognitiveTrace}}
+    \If{$\dpos\Usable(m_2)$}
+        \State $\snd(\human,l_2,A_2,m_2)$
+        \Comment{some derivation survives all declarative and procedural blockers}
+    \Else
+        \Statex \Comment{equivalently, $-\partial\,\Usable(m_2)$ for this compilation}
+        \State $V:=\{\,m'\in T\setminus\{m_2\}\mid
+               \dpos\Usable(m')\,\}$
+            \Comment{usable variants in the generated set $T$}
+        \For{each $m'\in V$}
+            \State Trigger the \replace{} mutation on transition $i$ with
+                   $[\![m_2]\!]^\mu:=m'$, as in \Cref{Alg:ForgetMutation1}
+            \Comment{one distinct mutated trace for each $m'$}
+        \EndFor
+        \If{$V=\varnothing$}
+            \State Trigger the \skipmutation{} mutation on transition $i$ by
+                   skipping $\snd(\human,l_2,A_2,m_2)$, as in
+                   \Cref{Alg:ForgetMutation1}
+        \EndIf
+    \EndIf
+\end{algorithmic}
+\end{algorithm*}
+
+%%%%%%%%%%%%%%%%%%
+\paragraph{One theory for all candidates}
+The theory $D$ is compiled once over the whole candidate set $T$. This is sound because the non-factual atoms are indexed by target: $\Via(\K{\human}{i+1},\pi,m)$ and $\Usable(m)$ for different $m$ never share a rule. Although the shared fact set can grow as targets are added, this creates no cross-target interference. In particular, membership of a hypothesis $\bar m$ in $\Blocked(\Hyp_\pi,\Forget_\human^{i+1})$ depends on $\bar m$ and $\Forget_\human^{i+1}$, not on $\pi$'s target. Thus, a fact $\Lapsed(\bar m)$ contributed by one target can activate a defeater for another target only when $\bar m$ is also blocked in the latter target's derivation. The remaining shared facts are likewise target-independent: $\Known(x)$ depends only on $\K{\human}{i+1}$, and $\contextcue{c}{\bar m}$ depends on cue presence, association, and the same blockedness test. Compiling jointly therefore gives the same tags as compiling each target separately, at the cost of a single run of the DL($\partial$) proof procedure, which is linear in the size of $D$. Building $D$ requires the normal derivations of every candidate in $T$, not only of $m_2$ as in \Cref{Alg:ForgetMutation1}; this enumeration dominates the cost.
+
+In the finite theory produced by this compilation, the derivation rules, defeaters, and reinstaters depend only on facts. The aggregation rules depend on the resulting $\Via$ atoms. These dependencies contain no cycles. Thus, each atom $\Via(\K{\human}{i+1},\pi,m)$ and $\Usable(m)$ has exactly one of the tags $+\partial$ and $-\partial$. This explains the negative tag in the algorithm's \textbf{else} branch. This property holds for the present compilation, but need not hold for every defeasible theory.
+
+%%%%%%%%%%%%%%%%%%
+\paragraph{What the tags decide}
+The two tests that \Cref{Alg:ForgetMutation1} performs on derivations become two queries. The test at its line~12, whether some derivation of $m_2$ has no blocked hypothesis, becomes $\dpos\Usable(m_2)$; the emission of a variant, which \Cref{Alg:ForgetMutation1} performs unconditionally once $R_{\bar{m}} \neq \varnothing$, becomes $\dpos\Usable(m')$. No atom beyond those of~\Cref{Subsec:DefeasibleLogic} is needed: a replacement is admissible exactly when the substituted target has a surviving derivation, and the same defeaters that block $m_2$ are what may block a variant. Three consequences follow. When $\mathit{PForget}^{i+1}_H=(\emptyset,\emptyset)$ and no cue is present, the test on $m_2$ coincides with the test at line~12 of \Cref{Alg:ForgetMutation1}, and a variant is emitted exactly when some derivation of it has no blocked hypothesis. The two algorithms can therefore differ only on variants all of whose derivations are blocked. Under Cases~2 and~3, this happens when a replacement $\bar m'$ passes the syntactic test $\bar m'\notin\mathit{Forget}^{i+1}_H$ but is derivable from the \emph{Forget} set, and every derivation of the variant uses a blocked hypothesis; a variant that can still be derived without blocked hypotheses is kept, as in \Cref{Alg:ForgetMutation1}. When every blocked hypothesis of some derivation of $m_2$ has a matching present cue, and no procedural lapse applies to that derivation, $m_2$ is reinstated without changing the \emph{Forget} set and the send is preserved where \Cref{Alg:ForgetMutation1} would have replaced or skipped it. When a competence is lost, every candidate whose derivations need it is blocked, so variants that \Cref{Alg:ForgetMutation1} would emit are discarded and, if none survives, the send is skipped: this is the operational content of the decision described in~\Cref{Subsec:ProceduralDefeasible}. Matching and propagation are those of \Cref{Subsec:Algorithm}, since the mutations \Cref{Alg:ForgetMutation2} triggers are the same three.
+
+%%%%%%%%%%%%%%%%%%
+\paragraph{The trace as explanation}
+The cognitive trace computed at the decision step justifies each outcome. A preserved send is justified by the surviving $\Via(\K{\human}{i+1},\pi,m_2)$ and, if the derivation was reinstated, by the reinstater $\rho_{\pi,\bar{m},c}$ that overruled $\omega_{\pi,\bar{m}}$. A \replace{} is justified by the defeaters that stand against every derivation of $m_2$, which say whether the intended message was lost declaratively, through a rule, or as a whole procedure, together with the surviving $\Via$ of the variant. A \skipmutation{} is justified, for every candidate, by the standing defeaters on each of its derivations or by the absence of any derivation.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Expressiveness beyond the \Forget{} Set}
+\label{Subsec:WhyDefeasible}
+
+We now make precise the sense in which the Defeasible Logic formalism expresses states that the \Forget{} set alone cannot represent. Given a closure policy, usability under the \Forget{} set semantics is determined by~\Cref{Def:BlockingFunction}. Thus, for the knowledge, \Forget{} set, and closure policy, a derivation can be disabled only by blocking one or more of its message hypotheses. In particular, the \Forget{} set state contains no component recording that an inference-rule schema or a derivation procedure has been forgotten.
+
+In this sense, the Defeasible Logic allows for a richer representation. In addition to \(\K{\human}{i}\) and \(\Forget_H^i\), it contains the procedural state \(\PForget_H^i\) of~\Cref{Subsec:ProceduralDefeasible} and the cue model \(\mathcal{C}_H^i\) of~\Cref{Subsec:Cue}. These additional components allow two states with the same knowledge and \Forget{} set to differ in which derivations are usable.
+
+Consider 
+\[ 
+    \K{\human}{i} = \bigl\{ \{\!|m_1|\!\}_{m_2}, m_2 \bigr\}, \qquad \Forget_H^i=\emptyset, 
+\] 
+and let \(\pi\) be the normal derivation 
+\[ 
+    \frac{\{\!|m_1|\!\}_{m_2}\quad m_2}{m_1} \;(\text{Symmetric decryption}). 
+\] 
+Thus, 
+\[ 
+    \Hyp_{\pi} = \bigl\{ \{\!|m_1|\!\}_{m_2}, m_2 \bigr\}. 
+\] 
+Suppose that every message in \(\Hyp_{\pi}\) remains accessible, but that \(H\) forgets the derivation \(\pi\) as a whole. As defined in~\Cref{Subsec:ProceduralForgetting}, the procedural state is 
+\[ 
+    \PForget_H^i = \bigl(\emptyset,\{\pi\}\bigr). 
+\] 
+The defeasible compilation therefore contains 
+\[ 
+    \Lapsed(\mathsf{Proc}(\pi)) 
+\] 
+and the procedure-level defeater 
+\[ 
+    \omega^{\mathsf{proc}}_{\pi}: \Lapsed(\mathsf{Proc}(\pi)) \defeat \neg\Via(\K{\human}{i},\pi,m_1), \qquad \omega^{\mathsf{proc}}_{\pi}>d_{\pi}. 
+\] 
+Since \(\pi\) is the only normal derivation of \(m_1\), the applicable procedural defeater gives 
+\[ 
+    -\partial\,\Via(\K{\human}{i},\pi,m_1) \qquad\text{and hence,}\qquad -\partial\,\Usable(m_1). 
+\] 
+At the same time, both hypotheses remain known and usable: 
+\[ 
+    +\partial\,\Usable(\{\!|m_1|\!\}_{m_2}) \qquad\text{and}\qquad +\partial\,\Usable(m_2). 
+\] 
+Their direct derivations do not depend on the forgotten procedure \(\pi\). This state cannot be represented by any choice of \(\Forget_H^i\) under the Case~1 interpretation adopted in our analysis. If neither \(\{\!|m_1|\!\}_{m_2}\) nor \(m_2\) is included in \(\Forget_H^i\), then 
+\[ 
+    \Blocked (\Hyp_{\pi},\Forget_H^i) = \emptyset, 
+\] and~\Cref{Def:DerivableUnderForgetting} gives 
+\[ 
+    \K{\human}{i} \vdash_{\Forget_H^i} m_1. 
+\] 
+The \Forget{} set semantics therefore considers \(\pi\) available. Conversely, preventing this derivation requires 
+\[ 
+    \Blocked (\Hyp_{\pi},\Forget_H^i) \neq \emptyset. 
+\] Under Case~1, this means that 
+\[ 
+    \{\!|m_1|\!\}_{m_2}\in\Forget_H^i \qquad\text{or}\qquad m_2\in\Forget_H^i. 
+\] 
+In the first case, the direct derivation of \(\{\!|m_1|\!\}_{m_2}\) is blocked; in the second case, the direct derivation of \(m_2\) is blocked. Thus, the \Forget{} set can prevent the derivation of \(m_1\) only by making at least one of its hypotheses unusable.
+
+Therefore, the \Forget{} set represents the loss of access to a message appearing at a leaf of a derivation, whereas \(\Lapsed(\mathsf{Proc}(\pi))\) represents the loss of the derivation itself without withdrawing any of its hypotheses. 
+
+%%%%%%%%%%%%%%%%%%
+\paragraph{Cue-triggered Separation} 
+
+Cue-triggered recall provides a second example of a state that cannot be represented by the \Forget{} set alone. Consider 
+\[ 
+    \K{\human}{i}=\{\bar m\}, \qquad \Forget_H^i=\{\bar m\}, 
+\] 
+and let \(\pi\) be the direct derivation of \(\bar m\). The defeasible compilation contains both 
+\[ 
+    \Known(\bar m) \qquad\text{and}\qquad \Lapsed(\bar m). 
+\] 
+In the absence of a cue, the forgetting defeater 
+\[ 
+    \omega_{\pi,\bar m}: \Lapsed(\bar m) \defeat \neg\Via(\K{\human}{i},\pi,\bar m), \qquad \omega_{\pi,\bar m}>d_{\pi}, 
+\] 
+blocks the derivation. Now suppose that \(c\in\mathit{Pres}^i\) and \((c,\bar m)\in\mathit{Assoc}_H\). As we defined in~\Cref{Subsec:Cue}, the cue model generates \(\mathit{ContextCue}(c,\bar m)\) and the reinstater 
+\[ 
+    \rho_{\pi,\bar m, c}: \mathit{ContextCue}(c,\bar m) \Rightarrow \Via(\K{\human}{i},\pi,\bar m), \qquad \rho_{\pi,\bar m, c}>\omega_{\pi,\bar m}. 
+\] 
+The reinstater gives 
+\[ 
+    +\partial\,\Via(\K{\human}{i},\pi,\bar m) \qquad\text{and hence,}\qquad +\partial\,\Usable(\bar m), 
+\] 
+while \(\Lapsed(\bar m)\) remains a fact. Neither \(\K{\human}{i}\) nor \(\Forget_H^i\) is modified. The \Forget{} set cannot represent both properties simultaneously. If \(\bar m\) remains in \(\Forget_H^i\), its direct derivation remains blocked. If it is removed from \(\Forget_H^i\), then it becomes usable, but the lapse is no longer recorded. The defeasible theory instead represents that \(\bar m\) is still subject to a lapse while a matching context cue temporarily restores its accessibility. 
+
+Both of these behaviours could be simulated at the level of the ceremony specification, by introducing additional facts and transitions for procedural competence, cue associations, and recovery conditions; no extension of the verification tool itself would be required. Such a construction would, however, augment the state beyond \(\K{\human}{i}\) and \(\Forget_H^i\), and would therefore no longer constitute an expression by the \Forget{} set alone.

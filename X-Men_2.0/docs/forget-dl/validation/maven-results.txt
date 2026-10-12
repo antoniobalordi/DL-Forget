@@ -1,0 +1,155 @@
+non-dl-tests-unrestricted.log
+[INFO] /Users/antonio/Desktop/files/X-Men_2.0/src/main/java/com/xmen/model/PSpecial.java: Some input files use unchecked or unsafe operations.
+[INFO] /Users/antonio/Desktop/files/X-Men_2.0/src/main/java/com/xmen/model/PSpecial.java: Recompile with -Xlint:unchecked for details.
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.111 s - in com.xmen.ApplicationTests
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 32.403 s - in com.xmen.userInterfaceTests.XMenInterfaceTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.31 s - in com.xmen.integrationTests.SkipReceiveTests
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.022 s - in com.xmen.integrationTests.ReplaceTypeTests
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.189 s - in com.xmen.integrationTests.NeglectMutationTests
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.122 s - in com.xmen.integrationTests.AddMutationTests
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.02 s - in com.xmen.integrationTests.ForgetNeglectTriggerTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.027 s - in com.xmen.integrationTests.ReplaceSubmessagesTests
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.014 s - in com.xmen.integrationTests.SkipReceiveSendTests
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.025 s - in com.xmen.integrationTests.TrialCaseForgetMutationTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.016 s - in com.xmen.integrationTests.SkipSendReceiveTests
+[INFO] Tests run: 18, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.1 s - in com.xmen.integrationTests.ForgetMutationStrategyIntegrationTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s - in com.xmen.integrationTests.SkipSendTests
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.015 s - in com.xmen.integrationTests.SkipReceiveSendReceiveTests
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.017 s - in com.xmen.RuntimeCompatibilityTest
+[WARNING] Tests run: 1, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0 s - in com.xmen.utilities.ParserDebugTest
+[WARNING] Tests run: 1, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0 s - in com.xmen.utilities.LexerDebugTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.463 s - in com.xmen.user_interface.UiAdaptationTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.028 s - in com.xmen.user_interface.DisplayScaleSupportTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.762 s - in com.xmen.user_interface.ChatBotDialogUiTest
+[INFO] Tests run: 21, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.065 s - in com.xmen.service.chatbot.ChatBotServiceSmokeTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.service.FileSplitterServiceTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.service.forget.ForgetContextTransitionTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.service.forget.ReplacementComputerTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.service.forget.ForgetMutationE2ETest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s - in com.xmen.service.forget.ForgetMutationFullIntegrationTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 s - in com.xmen.service.forget.BlockingCheckerCase1Test
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.service.forget.BlockingCheckerTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.025 s - in com.xmen.service.ThemePersistenceTest
+[WARNING] Tests run: 117, Failures: 0, Errors: 0, Skipped: 2
+[INFO] BUILD SUCCESS
+[INFO] Total time:  53.270 s
+[INFO] Finished at: 2026-10-02T20:44:34+01:00
+
+full-suite-final.log
+[INFO] /Users/antonio/Desktop/files/X-Men_2.0/src/main/java/com/xmen/model/PSpecial.java: Some input files use unchecked or unsafe operations.
+[INFO] /Users/antonio/Desktop/files/X-Men_2.0/src/main/java/com/xmen/model/PSpecial.java: Recompile with -Xlint:unchecked for details.
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.444 s - in com.xmen.ApplicationTests
+[ERROR] Tests run: 8, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 52.453 s <<< FAILURE! - in com.xmen.userInterfaceTests.XMenInterfaceTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.542 s - in com.xmen.integrationTests.SkipReceiveTests
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.integrationTests.ReplaceTypeTests
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.237 s - in com.xmen.integrationTests.NeglectMutationTests
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.113 s - in com.xmen.integrationTests.AddMutationTests
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s - in com.xmen.integrationTests.ForgetNeglectTriggerTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s - in com.xmen.integrationTests.ReplaceSubmessagesTests
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.027 s - in com.xmen.integrationTests.SkipReceiveSendTests
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s - in com.xmen.integrationTests.TrialCaseForgetMutationTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.integrationTests.SkipSendReceiveTests
+[INFO] Tests run: 18, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.026 s - in com.xmen.integrationTests.ForgetMutationStrategyIntegrationTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 s - in com.xmen.integrationTests.SkipSendTests
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.integrationTests.SkipReceiveSendReceiveTests
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.RuntimeCompatibilityTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 s - in com.xmen.utilities.FileHandlerSingleRuleTest
+[WARNING] Tests run: 1, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0.001 s - in com.xmen.utilities.ParserDebugTest
+[WARNING] Tests run: 1, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0 s - in com.xmen.utilities.LexerDebugTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.422 s - in com.xmen.user_interface.UiAdaptationTest
+[ERROR] Tests run: 5, Failures: 1, Errors: 1, Skipped: 0, Time elapsed: 8.67 s <<< FAILURE! - in com.xmen.user_interface.DisplayScaleSupportTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.249 s - in com.xmen.user_interface.ChatBotDialogUiTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s - in com.xmen.model.TamarinQuotedBuiltinTest
+[INFO] Tests run: 21, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 s - in com.xmen.service.chatbot.ChatBotServiceSmokeTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.service.FileSplitterServiceTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.service.DlZipServiceTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.service.forget.ForgetContextTransitionTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.014 s - in com.xmen.service.forget.ReplacementComputerTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.service.forget.ForgetMutationE2ETest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.service.forget.ForgetMutationFullIntegrationTest
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s - in com.xmen.service.forget.ForgetDlHostIntegrationTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.service.forget.BlockingCheckerCase1Test
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.service.forget.ForgetDlDirectCompatibilityTest
+[INFO] Tests run: 23, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s - in com.xmen.service.forget.dl.ForgetDlEngineTest
+[INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s - in com.xmen.service.forget.dl.AmbiguityBlockingReasonerTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s - in com.xmen.service.forget.dl.ForgetBlockingTest
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s - in com.xmen.service.forget.dl.ForgetDlPaperExamplesTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.service.forget.dl.ForgetDlPropertiesTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s - in com.xmen.service.forget.dl.ForgetDlBridgeTest
+[INFO] Tests run: 16, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s - in com.xmen.service.forget.dl.NormalDerivationsTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.service.forget.BlockingCheckerTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.service.ThemePersistenceTest
+[ERROR]   DisplayScaleSupportTest.ordinaryWindowKeepsItsSizeAndIsClampedToTheNewMonitor:108 expected: <true> but was: <false>
+[ERROR]   XMenInterfaceTest.testSendMutationRequestError:350 » EmptyNodeQuery there is n...
+[ERROR]   DisplayScaleSupportTest.monitorWorkAreaChangeIsObservedAndCanBeDetached:168->FxRobot.interact:416 » Runtime
+[ERROR] Tests run: 217, Failures: 1, Errors: 2, Skipped: 2
+[INFO] BUILD FAILURE
+[INFO] Total time:  01:26 min
+[INFO] Finished at: 2026-10-02T21:23:43+01:00
+
+gui-isolated-recheck.log
+[INFO] /Users/antonio/Desktop/files/X-Men_2.0/src/main/java/com/xmen/model/PSpecial.java: Some input files use unchecked or unsafe operations.
+[INFO] /Users/antonio/Desktop/files/X-Men_2.0/src/main/java/com/xmen/model/PSpecial.java: Recompile with -Xlint:unchecked for details.
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 50.299 s - in com.xmen.userInterfaceTests.XMenInterfaceTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.009 s - in com.xmen.user_interface.DisplayScaleSupportTest
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+[INFO] Total time:  01:00 min
+[INFO] Finished at: 2026-10-02T21:34:27+01:00
+
+final-suite-excluding-rechecked-gui.log
+[INFO] /Users/antonio/Desktop/files/X-Men_2.0/src/main/java/com/xmen/model/PSpecial.java: Some input files use unchecked or unsafe operations.
+[INFO] /Users/antonio/Desktop/files/X-Men_2.0/src/main/java/com/xmen/model/PSpecial.java: Recompile with -Xlint:unchecked for details.
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.08 s - in com.xmen.ApplicationTests
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.338 s - in com.xmen.integrationTests.SkipReceiveTests
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.026 s - in com.xmen.integrationTests.ReplaceTypeTests
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.199 s - in com.xmen.integrationTests.NeglectMutationTests
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.104 s - in com.xmen.integrationTests.AddMutationTests
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.02 s - in com.xmen.integrationTests.ForgetNeglectTriggerTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.032 s - in com.xmen.integrationTests.ReplaceSubmessagesTests
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.015 s - in com.xmen.integrationTests.SkipReceiveSendTests
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.025 s - in com.xmen.integrationTests.TrialCaseForgetMutationTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.016 s - in com.xmen.integrationTests.SkipSendReceiveTests
+[INFO] Tests run: 18, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.103 s - in com.xmen.integrationTests.ForgetMutationStrategyIntegrationTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.017 s - in com.xmen.integrationTests.SkipSendTests
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.011 s - in com.xmen.integrationTests.SkipReceiveSendReceiveTests
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.021 s - in com.xmen.RuntimeCompatibilityTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.utilities.FileHandlerSingleRuleTest
+[WARNING] Tests run: 1, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0 s - in com.xmen.utilities.ParserDebugTest
+[WARNING] Tests run: 1, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0 s - in com.xmen.utilities.LexerDebugTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.721 s - in com.xmen.user_interface.UiAdaptationTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.549 s - in com.xmen.user_interface.ChatBotDialogUiTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.model.TamarinQuotedBuiltinTest
+[INFO] Tests run: 21, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.072 s - in com.xmen.service.chatbot.ChatBotServiceSmokeTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.service.FileSplitterServiceTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 s - in com.xmen.service.DlZipServiceTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.service.forget.ForgetContextTransitionTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.service.forget.ReplacementComputerTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.service.forget.ForgetMutationE2ETest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s - in com.xmen.service.forget.ForgetMutationFullIntegrationTest
+[INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.108 s - in com.xmen.service.forget.ForgetDlHostIntegrationTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.service.forget.BlockingCheckerCase1Test
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.service.forget.ForgetDlDirectCompatibilityTest
+[INFO] Tests run: 24, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.01 s - in com.xmen.service.forget.dl.ForgetDlEngineTest
+[INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s - in com.xmen.service.forget.dl.AmbiguityBlockingReasonerTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.service.forget.dl.ForgetBlockingTest
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.016 s - in com.xmen.service.forget.dl.ForgetDlPaperExamplesTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.569 s - in com.xmen.service.forget.dl.ForgetDlPropertiesTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s - in com.xmen.service.forget.dl.ForgetDlBridgeTest
+[INFO] Tests run: 16, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s - in com.xmen.service.forget.dl.NormalDerivationsTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.xmen.service.forget.BlockingCheckerTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.022 s - in com.xmen.service.ThemePersistenceTest
+[WARNING] Tests run: 210, Failures: 0, Errors: 0, Skipped: 2
+[INFO] BUILD SUCCESS
+[INFO] Total time:  14.971 s
+[INFO] Finished at: 2026-10-02T21:41:04+01:00
+
+host-dl-tests-unrestricted.log
+[INFO] /Users/antonio/Desktop/files/X-Men_2.0/src/main/java/com/xmen/model/PSpecial.java: Some input files use unchecked or unsafe operations.
+[INFO] /Users/antonio/Desktop/files/X-Men_2.0/src/main/java/com/xmen/model/PSpecial.java: Recompile with -Xlint:unchecked for details.
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.065 s - in com.xmen.model.TamarinQuotedBuiltinTest
+[INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.919 s - in com.xmen.service.forget.ForgetDlHostIntegrationTest
+[INFO] Tests run: 18, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+[INFO] Total time:  8.987 s
+[INFO] Finished at: 2026-10-02T21:44:05+01:00

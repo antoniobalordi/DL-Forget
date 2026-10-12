@@ -1,0 +1,4482 @@
+diff --git a/docs/forget-dl/ROADMAP.md b/docs/forget-dl/ROADMAP.md
+new file mode 100644
+index 0000000..1a9991a
+--- /dev/null
++++ b/docs/forget-dl/ROADMAP.md
+@@ -0,0 +1,130 @@
++# Forget-DL plugin for X-Men 2.0 — definitive roadmap and traceability
++
++Semantics, assumptions (A1–A12), errata (E1–E7) and host discrepancies (D1–D10):
++[`SEMANTIC_CONTRACT.md`](SEMANTIC_CONTRACT.md). Status values: `completed` means code exists **and**
++its tests were executed; `ready` means no blocker; `blocked` names the missing dependency.
++
++## 1. Changes with respect to the supplied plan
++
++* **Reasoner.** SPINdle is not on the critical path. Compiled theories are finite, acyclic and
++  template-shaped; a reference DL(∂) engine (~200 lines) is differentially tested against an
++  independent ASP encoding instead. `DefeasibleReasoner` remains the seam for SPINdle (optional O2).
++* **Derivations.** The legacy engine is not repaired in place (that would change Algorithm 1 output);
++  DL mode uses a new enumerator. Legacy fixes become optional, regression-tracked work (O1).
++* **Scope.** Guarded cue branches, a translation-correctness argument, bank validity state and the
++  old-X-Men adapter are optional research items, not part of Algorithm 2.
++* **Added.** Re-evaluation of later sends under persisting lapses (D9), scenario syntax for
++  procedural lapses and cues, and the host defects D5/D7 that also affect the Algorithm 1 baseline.
++
++## 2. Roadmap
++
++Critical path: **T1.1 → T1.2 → T1.4 → T1.5 → T2.2 → T3.1 → T3.2 → T4.1** (T1.3, T2.1, T2.3 feed T1.5).
++
++| ID | Task | Components | Depends | Validation | Status |
++|---|---|---|---|---|---|
++| T0.1 | Semantic contract | `SEMANTIC_CONTRACT.md` | — | review | completed |
++| T0.2 | Host inspection, defect inventory | D1–D10 | — | source inspection at d8c6404 | completed |
++| T1.1 | Term algebra, normal-derivation enumerator, coverage | `Terms`, `NormalDerivations` | T0.1 | `NormalDerivationsTest` | completed |
++| T1.2 | `Blocked`, Cases 1–3 | `ForgetBlocking` | T1.1 | `ForgetBlockingTest` | completed |
++| T1.3 | DL(∂) engine | `DefeasibleTheory`, `AmbiguityBlockingReasoner` | — | conformance + ASP differential | completed |
++| T1.4 | Compiler (§§7.3, 7.5, 7.6) | `ForgetDlCompiler` | T1.1–T1.3 | examples, properties | completed |
++| T1.5 | Algorithm 2 engine | `ForgetDlEngine`, `ForgetDlModel` | T1.4 | `ForgetDlEngineTest` | completed |
++| T1.6 | Cognitive trace | `ForgetDlResult` | T1.5 | trace assertions in example tests | completed |
++| T2.1 | DL conformance + differential oracle | tests, `scripts/dl-oracle` | T1.3 | 14 tests; 69,066 literals, 0 mismatches | completed |
++| T2.2 | Paper examples 1–10, Lemma 1, §7.8, Tables 3–4 | `ForgetDlPaperExamplesTest` | T1.5 | 15 tests | completed |
++| T2.3 | Property tests | `ForgetDlPropertiesTest` | T1.5 | 4 × 400 seeded scenarios | completed |
++| T3.1a | Host bridge (representation, labels, state write-back) | `ForgetDlBridge` | T1.5 | `ForgetDlBridgeTest` | completed |
++| T3.1b | Opt-in DL branch + `Forget-Semantics` header | `ForgetMutationStrategy`, `ForgetMutationController` | T3.1a | parse-only check | **ready** (needs T3.2 to type-check) |
++| T3.2 | Maven build, existing suite, Surefire run of the DL tests | `./mvnw test` | T3.1b | full suite green | **blocked**: Maven Central unreachable here |
++| T3.3 | Re-evaluate later sends under persisting lapses (D9) | strategy | T3.2 | §8.1 transition j as an end-to-end fixture | ready |
++| T3.4 | `.spthy` syntax for rule/procedure lapses and cues | `ForgetMutationParser`, bridge | decision | parser tests | **blocked**: needs author decision |
++| T4.1 | DL-directed Bank/Invoice models through Tamarin | outputs + Tamarin | T3.2 | per-lemma results vs §5.2 | **blocked**: T3.2 |
++| T4.2 | User documentation of DL mode | READMEs | T3.2 | review | ready |
++| O1 | Fix legacy D1–D7, D10 behind regression fixtures | legacy services | T3.2 | before/after fixture diff | optional |
++| O2 | Qualify SPINdle behind `DefeasibleReasoner` | adapter | access to SourceForge | same conformance + oracle | optional |
++| O3 | Report the ASP binding defect upstream | — | — | — | optional |
++| O4 | Guarded cue branches; translation argument; original-X-Men adapter | — | T4.1 | — | optional |
++
++Mandatory: T0–T3.2, T4.1. Desirable: T3.3, T3.4, T4.2. Optional: O1–O4.
++
++## 3. Formal concept → code → test
++
++| Formal concept | Representation | Component | Test |
++|---|---|---|---|
++| Messages, Def. 1–3 | X-Men `Message`; format A2 | `Terms` | `formatRequired`, `legacyEncrypt` |
++| Π_m, normality (§3.2) | `Derivation` trees, A3 | `NormalDerivations` | `example4`, `example6`, `finitenessCounterexample`, `normality` |
++| Hyp_π (Def. 5) | `Initial` leaves; decryption keeps ciphertext + key | `NormalDerivations.hypotheses` | `example1`, `example4` |
++| Rules(π), procedure id (Def. 7) | label set; SHA-256 of canonical tree | `NormalDerivations.rules/procedureId` | `example10`, `determinismAndStableIds` |
++| Blocked, Cases 1–3 (Def. 5) | analysis/synthesis saturation | `ForgetBlocking` | `ForgetBlockingTest` |
++| DL(∂) (§7.1) | least fixpoint of the proof conditions | `AmbiguityBlockingReasoner` | conformance suite, ASP oracle |
++| Known, Lapsed, d_π, use_π, ω (§7.3) | atoms `Known(x)`, `Lapsed(h)`, `Via(π,t)`, `Usable(t)` | `ForgetDlCompiler` | `example7`–`example9` |
++| Cue model, reinstaters (Def. 8, §7.5) | `CueModel`, `ContextCue(c,h)`, `rho:π:h:c` | model, compiler | `lemma1`, `cueSeparation`, `irrelevantCueIsConservative` |
++| PForget, ω^rule, ω^proc (§7.6) | `ProceduralState`, `LapsedRule`, `LapsedProc` | model, compiler, engine | `example10*`, `ruleVersusProcedureScope`, `proceduralStateUpdate` |
++| Alg. 2 l.1–13 | state update, Neglect, re-acquisition | `ForgetDlEngine` | `erratum…`, `forgetJustReceived`, `neglect`, `reacquisition*` |
++| Alg. 2 l.14–19 | T, R_m̄, m2[C] | `ForgetDlEngine` | `candidateCap`, `labelRequired`, `closureBlockedVariant`, `noSelfReplacement`, `multipleLapses` |
++| Alg. 2 l.20–31 | joint compile, decision | `ForgetDlEngine` | `table4`, `table3*`, `jointEqualsSeparate`, `coverage` |
++| Cognitive trace (§7.4) | `TargetTrace`, `DerivationTrace`, `Blocker` | `ForgetDlResult` | standing/overruled assertions in example tests |
++| Host integration | normalisation A9, public constants A10 | `ForgetDlBridge`, strategy glue | `ForgetDlBridgeTest`; glue: parse only |
++
++## 4. Traceability matrix
++
++| Paper requirement | Implementation | Test | Status |
++|---|---|---|---|
++| Def. 4 case 1 (not retained) | engine l.4 | `forgetJustReceived` | tested |
++| Def. 4 case 2 (known message) | engine l.4, E1 | `erratumReceivedMessageIsKept` | tested |
++| Ex. 1 (forgotten non-hypothesis) | enumerator | `example1` | tested |
++| Ex. 2, Ex. 3 (re-acquisition) | engine l.13, A6 | `forgetJustReceived`, `reacquisition`, `reacquisitionNeedsReceiptProvenance` | tested |
++| Def. 5 Cases 1–3, Ex. 4–6 | `ForgetBlocking` | `ForgetBlockingTest` | tested |
++| Def. 6 / Alg. 1 l.12 | compiler + reasoner | `agreesWithAlgorithm1` | tested |
++| §3.2 normal derivations | enumerator, A3 | `NormalDerivationsTest` | tested |
++| §7.1 DL(∂) tags | reasoner | conformance; oracle | tested |
++| §7.3 templates, Ex. 7–9 | compiler | `example7`, `example8`, `example9` | tested |
++| Def. 7 Rules(π), identity | enumerator | `example10`, `determinismAndStableIds` | tested |
++| §7.6 rule vs procedure scope, Ex. 10 | compiler | `example10RuleLapse`, `example10ProcedureLapse`, `ruleVersusProcedureScope` | tested |
++| §7.6 state update / relearning | engine | `proceduralStateUpdate` | tested |
++| Def. 8, Lemma 1 | compiler | `lemma1`, `dlMatchesTemplateOracle` | tested |
++| §7.5 irrelevant-cue conservativity | compiler | `irrelevantCueIsConservative` | tested |
++| §7.7 joint = separate | compiler | `jointEqualsSeparate` | tested |
++| §7.7 divergence from Alg. 1 (closure) | engine | `closureBlockedVariant` | tested |
++| §7.7 no mixed keep/replace variants | engine, A5 | `noSelfReplacement` | tested |
++| §7.4 cognitive trace | `ForgetDlResult` | `example7`, `table3Hint`, `example10*` | tested |
++| §7.8 two separations | compiler | `proceduralSeparation`, `cueSeparation` | tested |
++| §8.1 Table 3 (none / hint / reset) | engine | `table3NoRecovery`, `table3Hint`, `table3Reset` | tested |
++| §8.1 cue absent at later transition | engine | `table3Hint` (second run) | tested (engine); host: D9 open |
++| §8.2 Table 4, four rows | engine | `table4`, `invoiceWithReceivedReminder` | tested |
++| §2.1 attack (PW1 → PW2) | engine, bridge | `bankLoginAttack`, `bankRuleH2` | tested |
++| Alg. 2 Neglect branch | engine, bridge | `neglect` (both) | tested |
++| Matching + propagation (§4.3) | reused host helpers | — | implemented, not compiled (T3.2) |
++| Generated `.spthy`/`.m` analysed by Tamarin | — | — | blocked (T4.1) |
++| §8.1 bank validity state `Valid_B` | — | — | not in scope of the human decision (ceremony model) |
++
++## 5. Validation evidence (this environment)
++
++* Build: core and tests compiled with `javac -Xlint:all` (JDK 21.0.10): 0 warnings.
++* Tests: 71 executed, 71 passed, via a JUnit-5-API-compatible runner (Maven Central unreachable;
++  test sources use only `org.junit.jupiter.api` and run unchanged under Surefire).
++* Mutation check: 8 injected semantic faults; 7 killed, 1 equivalent (M5, see E4), 1 initially
++  surviving (M8, re-acquisition provenance) killed after adding `reacquisitionNeedsReceiptProvenance`.
++* Differential oracle (`scripts/dl-oracle/asp_crosscheck.py`, clingo 5.8.2, seeds 1–5):
++  3,000 theories (2,000 random general, 1,000 compiled from random Forget scenarios),
++  69,066 literals, **0 mismatches** against the encoding with the attacker bound; upstream encoding:
++  63 mismatches, all literals it tags both +∂ and −∂ (see contract §5).
++* Host glue: javac parse-only check passes (negative control fails as expected); **not type-checked**.
++
++## 6. Remaining work that cannot be completed here
++
++| Item | Missing | Why it blocks | Next action |
++|---|---|---|---|
++| T3.2 | Maven Central (Spring Boot, Lombok, JUnit, AssertJ) | glue cannot be type-checked; legacy suite cannot run | `./mvnw -q test`; then `./mvnw test -Dtest='com.xmen.service.forget.dl.*Test'` |
++| T4.1 | T3.2; Tamarin + Maude | no generated models to verify | POST `/forget/mutations` with `Forget-Semantics: DL` on `Forget_Bank_Input.spthy`; run Tamarin on outputs; compare with §5.2 lemmas |
++| T3.4 | input syntax decision | procedural lapses and cues cannot be expressed in `.spthy` today (engine supports them) | choose e.g. `ForgetRule('sdec')`, `ForgetProc(...)`, `CueAssoc(c, x)`, `CuePresent(c)` action facts and extend `ForgetMutationParser` |
++| O2 | SourceForge access, licence check | SPINdle artifact unavailable | run the conformance suite and oracle against it behind `DefeasibleReasoner` |
++
++## 7. Reproduce
++
++```bash
++# in the repository, after T3.2 is possible
++./mvnw test -Dtest='com.xmen.service.forget.dl.*Test'
++# differential oracle (needs: pip install clingo; git clone gvdgdo/Defeasible-Deontic-Logic)
++python3 scripts/dl-oracle/asp_crosscheck.py <ddl-dir> target/classes:target/test-classes 400 200 1
++```
+diff --git a/docs/forget-dl/SEMANTIC_CONTRACT.md b/docs/forget-dl/SEMANTIC_CONTRACT.md
+new file mode 100644
+index 0000000..cd72386
+--- /dev/null
++++ b/docs/forget-dl/SEMANTIC_CONTRACT.md
+@@ -0,0 +1,76 @@
++# Forget-DL — semantic contract
++
++Normative reference: *Human Memory Lapses in Security Ceremonies* (long paper, revision `-2`),
++§§3–4 and §§7–8. Host: X-Men 2.0 at `d8c640475b038555c262e686e1054275396999e2`.
++Code: `com.xmen.service.forget.dl` (pure Java; depends only on the Lombok-free message model).
++
++## 1. Paper requirements implemented
++
++| Ref | Requirement | Where |
++|---|---|---|
++| Def. 4, Alg. 2 l.2–4 | Two declarative lapse cases; K monotone; Forget only grows except by re-acquisition | `ForgetDlEngine.run` |
++| Def. 5 | `Blocked(Hyp_π, Forget)` for Cases 1–3 | `ForgetBlocking` |
++| Def. 6, §3.2 | Derivability under forgetting over normal derivations | `NormalDerivations` + compiler |
++| §7.1 | DL(∂), ambiguity blocking, team defeat, four tags | `AmbiguityBlockingReasoner` |
++| §7.1, §7.3 | `Known`, `Lapsed`, `d_π`, strict `use_π`, `ω_{π,h}` for every hypothesis | `ForgetDlCompiler` |
++| Def. 7, §7.6 | `Rules(π)`, stable procedure identity, `Lapsed(Rule(r))`, `Lapsed(Proc(π))`, rule/procedure defeaters | `NormalDerivations`, compiler |
++| Def. 8, §7.5 | Cue model; `ContextCue` facts for blocked h only; reinstater per (π, h, c), superior to the matching ω only | compiler |
++| §7.6 | Typed procedural state; persistence; explicit relearning by set difference; cues never restore competences | engine |
++| Alg. 2 l.5–6 | Message lapse used in an internal action → Neglect and return | engine |
++| Alg. 2 l.13, Ex. 3 | Re-acquisition before candidate generation | engine (A6) |
++| Alg. 2 l.14–19 | Candidate set T from declarative blockers only; Cartesian product per π | engine |
++| Alg. 2 l.20–31 | One theory over T; preserve m2 if usable; else Replace each usable variant; else Skip | engine |
++| §7.4 | Cognitive trace: support, overruled and standing blockers by kind; Π = ∅ distinguished | `ForgetDlResult` |
++
++## 2. Implementation assumptions (paper silent or underspecified)
++
++| ID | Assumption | Reason |
++|---|---|---|
++| A1 | Supported algebra: atoms, pairs, `senc` (and legacy `{m}_k`), `aenc(m, pk(sk))` with private key `sk`, and every other **public** function symbol as a free constructor (`sign`, `h`, `pk`, user functions). Rule labels: `pair`, `proj` (both projections), `senc`, `sdec`, `aenc`, `adec`, and the symbol name for other constructors. Equational symbols (XOR, DH, bilinear) and destructor symbols inside terms → `UNSUPPORTED`. | Tamarin semantics for public functions; Def. 1 "other operators … handled in the standard way". |
++| A2 | `format(atom) = "atom"`; otherwise top symbol/arity. | Def. 3 read literally (`f = m`) forbids the paper's own PW1→PW2 replacement. |
++| A3 | Π_m = derivation trees in which no decomposition consumes the output of its inverse composition **and no term repeats on a root-to-leaf branch**. | Makes Π_m finite (all terms ⊆ St(K ∪ {m})) and subsumes "nor vice versa"; see E3. Whole-procedure lapses refer to this basis. |
++| A4 | A blocked hypothesis without a label has `R = ∅`. | §3.3: labels exist to preserve type safety. |
++| A5 | `m̄′ ≠ m̄` in `R_m̄`. | Under Cases 2–3 the syntactic test admits m̄ itself, which would generate the mixed keep/replace variants §7.7 excludes. |
++| A6 | `f` is re-acquired iff `f = m1`, or some derivation of `f` from K′ has `m1` as a hypothesis and no blocked hypothesis; iterated to a fixpoint; never for a lapse of the same transition; never when m1 itself is not retained. | Ex. 3 and §4.3 ("re-received or derivable from the received message"); unrestricted re-derivation would erase retrieval lapses. |
++| A7 | Several lapse events at one transition are applied in sequence before the decision. | Host allows several `Forget(x)` per rule; Alg. 2 shows one ℓ. |
++| A8 | Literal Alg. 2: the Neglect `return` precedes line 13, so no re-acquisition at a Neglect transition. | See E7. |
++| A9 | Host atoms are tilde-insensitive (`~pw1 ≡ pw1`). | Host `canonicalize` already does this. |
++| A10 | Public constants (`$X`, `'c'`) occurring in the intended send are available for derivation; they are not written back to host state. | Honest agents can always use public names; host K extraction omits them. |
++| A11 | Coverage policy: Preserve is justified under truncated enumeration (the templates contain every opponent of each supplied derivation); a negative intended target under truncation → `UNKNOWN_COVERAGE`; Replace under incomplete candidate/variant coverage is emitted and flagged `partial`; Skip only with complete coverage. | §7.7 completeness is relative to T and Π. |
++| A12 | `m2[C]` = simultaneous, outermost syntactic substitution of every occurrence, including inside function arguments; a blocked hypothesis that does not occur in m2 yields no variant. | §7.7 "syntactic variant m2[C]". |
++
++## 3. Paper issues (errata and remarks)
++
++| ID | Location | Issue | Resolution |
++|---|---|---|---|
++| E1 | Alg. 2 l.4, p.38 | `[[K]] := K ∪ {m}` drops m1 (m ∈ K already); comment says "updated with the message just received". | Use `K ∪ {m1}` (Alg. 1 l.6). Test `erratumReceivedMessageIsKept`; mutant M4 killed. |
++| E2 | Def. 3 | Atom format is the atom itself. | A2. |
++| E3 | §3.2 | "finite space of normal derivations" is false under immediate-inverse normality alone: K = {{\|a\|}b, {\|b\|}a, a} has infinitely many normal derivations of a. | A3. Test `finitenessCounterexample`. |
++| E4 | §7.3, §7.6 | `ω > d_π` (and `ω^rule > d_π`) is inert in DL(∂): an applicable defeater already blocks +∂ unless a superior supporter applies. What matters is the absence of `d_π > ω` and the presence of `ρ > ω`. | Kept for fidelity; mutant M5 is equivalent. |
++| E5 | §8.2 | "single normal derivation π_S" holds only if srv/amt are not also obtainable from the received reminder ⟨S,H,srv,amt⟩. | Decisions unchanged; test `invoiceWithReceivedReminder`. |
++| E6 | §7.7 l.17 | Syntactic `m̄′ ∉ Forget` admits m̄ under Cases 2–3. | A5. |
++| E7 | Alg. 2 l.6 | Early return skips re-acquisition (l.13). | A8 (literal); alternative recorded. |
++| — | p.26 | The "+∂ for both tags" typo reported in the supplied roadmap is **not** present in this revision. | none |
++
++## 4. Host discrepancies (verified by inspection at d8c6404; legacy path left unchanged)
++
++| ID | Component | Discrepancy | DL mode |
++|---|---|---|---|
++| D1 | `DerivationServiceImpl.deriveAllRecursive` | Decryption node lacks the ciphertext premise → ciphertext never a hypothesis. | Fixed in `NormalDerivations`. |
++| D2 | same | Decryption only of legacy `Encrypt`, not `senc`/`aenc` terms; no inverse key for `aenc`; destructors only on members of K. | Fixed. |
++| D3 | `DerivationConfig` | User-defined functions never composed → Π = ∅ for `k(nH,nB)` → non-paper textual fallback using only the first replacement. | Public functions composable (A1). |
++| D4 | `ForgetDerivationChecker.getAllDerivations` | Exceptions → empty set; truncation silent. | Explicit `Coverage`, `Status`. |
++| D5 | `ReplacementComputer`/`applyVariantToRule` | No substitution inside function arguments; every variant rewritten with `iterator().next()` → alternatives lost or duplicated. | One explicit singleton substitution per variant. |
++| D6 | `ReplacementComputer`, `TermFormat` | Mode-dependent `isBlocked` instead of syntactic `∉ Forget`; unknown label accepts any; name-heuristic formats. | A2, A4, Alg. 2 l.17. |
++| D7 | `ForgetContext.updateForTransition`, `resolveForgetMessage` | Forget-just-received removes m1 from Forget; re-acquisition only by equality; unknown forgotten message fabricated as an atom. | Paper semantics; unknown → `INVALID_INPUT`. |
++| D8 | `ForgetMutationStrategy` | Neglect and send analysis both run; Alg. 1/2 branch. | Alg. 2 branch. |
++| D9 | `ForgetMutationStrategy` | Only rules with a `Forget(x)` annotation are evaluated; later sends under a persisting lapse are not re-checked (§8.1, transition j). | Open (T3.3). |
++| D10 | `BlockingChecker` Case 3 | Goal-directed, depth-bounded; decrypts `Encrypt` with the encryption key; only direct members. | Saturation in `ForgetBlocking`. |
++
++## 5. External oracle finding
++
++`gvdgdo/Defeasible-Deontic-Logic@679c638`, `Basic/defeasible-ab.asp`: `discardedOrNotSuperior(T,X)`
++re-quantifies the attacker `S`, so `overruled/2` no longer requires one attacker unanswered by every
++team member. Under team defeat (e.g. two lapses with two matching cues, Lemma 1) the encoding derives
++both `defeasible(X)` and `refuted(X)`. `scripts/dl-oracle/asp_crosscheck.py` reports both the upstream
++run and a run with `S` bound; only the patched run is used as the oracle.
+diff --git a/scripts/dl-oracle/asp_crosscheck.py b/scripts/dl-oracle/asp_crosscheck.py
+new file mode 100644
+index 0000000..d3e2e2c
+--- /dev/null
++++ b/scripts/dl-oracle/asp_crosscheck.py
+@@ -0,0 +1,164 @@
++#!/usr/bin/env python3
++"""Differential check of the Java DL(∂) reasoner against Governatori's ASP encoding.
++
++Usage: asp_crosscheck.py <ddl-repo-dir> <java-classpath> [n_random] [n_compiled] [seed]
++
++* Random general theories are acyclic, have consistent facts/strict heads, and never make a
++  defeater superior for a literal that also has strict/defeasible rules. Under these conditions
++  the ASP variant (defeaters may rebut as team members) coincides with Antoniou et al. 2001.
++* Compiled theories come from random Forget scenarios exported by DlOracleHarness.
++The upstream encoding (gvdgdo/Defeasible-Deontic-Logic@679c638, Basic/defeasible-ab.asp) loses
++the binding of the attacker S between overruled/2 and discardedOrNotSuperior/2, so under team
++defeat it can derive both defeasible(X) and refuted(X). The script therefore checks against the
++upstream file AND against a locally patched copy in which S is bound (DL(∂) condition -∂ 2.3).
++Exit code 0 iff the patched encoding agrees on every tag of every literal.
++"""
++import random, subprocess, sys, tempfile, os, shutil
++import clingo
++
++UPSTREAM_OVERRULED = """overruled(R,X) :- rule(R,X), rule(S,Y), opposes(X,Y), applicable(S,Y),
++    discardedOrNotSuperior(T,X) : rule(T,X).
++
++discardedOrNotSuperior(T,X) :- rule(T,X), discarded(T,X).
++discardedOrNotSuperior(T,X) :- rule(T,X), opposes(X,Y), rule(S,Y), 
++    applicable(S,Y), not superior(T,S)."""
++PATCHED_OVERRULED = """overruled(R,X) :- rule(R,X), rule(S,Y), opposes(X,Y), applicable(S,Y),
++    discardedOrNotSuperior(T,X,S) : rule(T,X).
++
++discardedOrNotSuperior(T,X,S) :- rule(T,X), opposes(X,Y), rule(S,Y), discarded(T,X).
++discardedOrNotSuperior(T,X,S) :- rule(T,X), opposes(X,Y), rule(S,Y), not superior(T,S)."""
++
++def prepare(ddl, patched):
++    d = tempfile.mkdtemp(prefix="ddl_")
++    shutil.copytree(os.path.join(ddl, "Basic"), os.path.join(d, "Basic"))
++    shutil.copy(os.path.join(ddl, "language.asp"), d)
++    f = os.path.join(d, "Basic", "defeasible-ab.asp")
++    if patched:
++        text = open(f).read()
++        assert UPSTREAM_OVERRULED in text, "upstream encoding changed; review the patch"
++        open(f, "w").write(text.replace(UPSTREAM_OVERRULED, PATCHED_OVERRULED))
++    return d
++
++def gen_random(rng, idx):
++    n = rng.randint(3, 7)
++    atoms = [f"p{i}" for i in range(n)]
++    lines, rules, heads_by_lit, fact_lits = [f"theory rnd{idx}"], [], {}, set()
++    for a in atoms:
++        lines.append(f"declare {a}")
++    for a in atoms[: rng.randint(0, 2)]:
++        lit = a if rng.random() < .8 else "-" + a
++        fact_lits.add(lit); lines.append(f"fact {lit}")
++    strict_heads = set(fact_lits)
++    for r in range(rng.randint(2, 9)):
++        h = rng.randint(1, n - 1)
++        head = atoms[h] if rng.random() < .6 else "-" + atoms[h]
++        body = [(atoms[b] if rng.random() < .7 else "-" + atoms[b])
++                for b in rng.sample(range(h), rng.randint(0, min(2, h)))]
++        kind = rng.choice("SDDDF")
++        comp = head[1:] if head.startswith("-") else "-" + head
++        if kind == "S" and comp in strict_heads:
++            kind = "D"
++        if kind == "S":
++            strict_heads.add(head)
++        rules.append((f"r{r}", kind, head, body))
++    nondefeater_heads = {h for (_, k, h, _) in rules if k != "F"}
++    sups = []
++    rank = {l: rng.random() for (l, _, _, _) in rules}  # orient edges by rank: acyclic by construction
++    for (l1, k1, h1, _) in rules:
++        for (l2, k2, h2, _) in rules:
++            comp = h2[1:] if h2.startswith("-") else "-" + h2
++            if h1 == comp and l1 < l2 and rng.random() < .5:
++                t, s = (l1, l2) if rank[l1] < rank[l2] else (l2, l1)
++                kt, ht = next((k, h) for (l, k, h, _) in rules if l == t)
++                if kt == "F" and ht in nondefeater_heads:
++                    continue
++                sups.append((t, s))
++    for (l, k, h, b) in rules:
++        lines.append(" ".join(["rule", l, k, h] + b))
++    for t, s in sups:
++        lines.append(f"sup {t} {s}")
++    lines.append("end")
++    return "\n".join(lines) + "\n"
++
++def parse(text):
++    theories, cur = [], None
++    for line in text.splitlines():
++        t = line.split()
++        if not t: continue
++        if t[0] == "theory": cur = {"id": t[1], "atoms": [], "facts": [], "rules": [], "sup": []}
++        elif t[0] == "declare": cur["atoms"].append(t[1])
++        elif t[0] == "fact": cur["facts"].append(t[1])
++        elif t[0] == "rule": cur["rules"].append((t[1], t[2], t[3], t[4:]))
++        elif t[0] == "sup": cur["sup"].append((t[1], t[2]))
++        elif t[0] == "end": theories.append(cur)
++    return theories
++
++def asp_tags(th, ddl):
++    amap = {a: f"a{i}" for i, a in enumerate(th["atoms"])}
++    rmap = {r[0]: f"r{i}" for i, r in enumerate(th["rules"])}
++    L = lambda s: f"non({amap[s[1:]]})" if s.startswith("-") else amap[s]
++    prog = [f"atom({v})." for v in amap.values()]
++    prog += [f"fact({L(f)})." for f in th["facts"]]
++    kinds = {"S": "strictRule", "D": "defeasibleRule", "F": "defeater"}
++    for (l, k, h, b) in th["rules"]:
++        prog.append(f"{kinds[k]}({rmap[l]},{L(h)}).")
++        prog += [f"body({rmap[l]},{L(x)})." for x in b]
++    prog += [f"superior({rmap[t]},{rmap[s]})." for (t, s) in th["sup"]]
++    ctl = clingo.Control(["0", "--warn=none"])
++    ctl.load(os.path.join(ddl, "Basic", "defeasible-ab.asp"))
++    ctl.add("base", [], "\n".join(prog)); ctl.ground([("base", [])])
++    models = []
++    ctl.solve(on_model=lambda m: models.append([str(s) for s in m.symbols(shown=True)]))
++    assert len(models) == 1, f"{th['id']}: {len(models)} stable models"
++    inv = {v: k for k, v in amap.items()}
++    out = {}
++    for a in th["atoms"]:
++        for lit in (a, "-" + a):
++            out[lit] = ""
++    for s in models[0]:
++        pred, arg = s.split("(", 1); arg = arg[:-1]
++        tag = {"definite": "+D", "definiteRefuted": "-D", "defeasible": "+d", "refuted": "-d"}.get(pred)
++        if not tag: continue
++        lit = "-" + inv[arg[4:-1]] if arg.startswith("non(") else inv[arg]
++        out[lit] += tag
++    order = ["+D", "-D", "+d", "-d"]
++    return {k: "".join(t for t in order if t in v) for k, v in out.items()}
++
++def main():
++    ddl, cp = sys.argv[1], sys.argv[2]
++    n_rnd = int(sys.argv[3]) if len(sys.argv) > 3 else 300
++    n_cmp = int(sys.argv[4]) if len(sys.argv) > 4 else 150
++    seed = int(sys.argv[5]) if len(sys.argv) > 5 else 1
++    rng = random.Random(seed)
++    text = "".join(gen_random(rng, i) for i in range(n_rnd))
++    text += subprocess.run(["java", "-cp", cp, "com.xmen.service.forget.dl.DlOracleHarness",
++                            "export", str(n_cmp), str(seed)], capture_output=True, text=True,
++                           check=True).stdout
++    with tempfile.NamedTemporaryFile("w", suffix=".dl", delete=False, encoding="utf-8") as f:
++        f.write(text); path = f.name
++    java = {}
++    for line in subprocess.run(["java", "-cp", cp, "com.xmen.service.forget.dl.DlOracleHarness",
++                                "tags", path], capture_output=True, text=True, check=True).stdout.splitlines():
++        i, lit, *tag = line.split(" ")
++        java[(i, lit)] = tag[0] if tag else ""
++    theories = parse(text)
++    result = {}
++    for label, patched in (("upstream", False), ("patched", True)):
++        enc = prepare(ddl, patched)
++        mismatches, lits, both = [], 0, 0
++        for th in theories:
++            for lit, tag in asp_tags(th, enc).items():
++                lits += 1
++                both += ("+d" in tag and "-d" in tag)
++                if java[(th["id"], lit)] != tag:
++                    mismatches.append((th["id"], lit, java[(th["id"], lit)], tag))
++        java_both = sum(1 for v in java.values() if "+d" in v and "-d" in v)
++        print(f"[{label}] theories={len(theories)} literals={lits} mismatches={len(mismatches)}"
++              f" asp_inconsistent_literals={both} java_inconsistent_literals={java_both}")
++        for m in mismatches[:5]:
++            print("  MISMATCH", m)
++        result[label] = len(mismatches)
++    sys.exit(1 if result["patched"] else 0)
++
++if __name__ == "__main__":
++    main()
+diff --git a/src/main/java/com/xmen/controller/ForgetMutationController.java b/src/main/java/com/xmen/controller/ForgetMutationController.java
+index 76d0446..ce0e9d0 100644
+--- a/src/main/java/com/xmen/controller/ForgetMutationController.java
++++ b/src/main/java/com/xmen/controller/ForgetMutationController.java
+@@ -87,12 +87,15 @@ public class ForgetMutationController {
+       @Parameter(description = "Blocking mode: CASE1/CASE2/CASE3 or aliases")
+       @RequestHeader(value = "Blocking-Mode", required = false) String blockingModeHeader,
+       @Parameter(description = "Comma-separated witness action names")
+-      @RequestHeader(value = "Witness-Actions", required = false) String witnessActionsHeader)
++      @RequestHeader(value = "Witness-Actions", required = false) String witnessActionsHeader,
++      @Parameter(description = "Forget semantics: ALGORITHM1 (default) or DL (Algorithm 2)")
++      @RequestHeader(value = "Forget-Semantics", required = false) String forgetSemantics)
+       throws Exception {
+     boolean haskellWasEnabled = false;
+     String derivationTreeContent = null;
+     int originalMaxVariants = forgetMutationStrategy.getMaxVariantsPerRule();
+     BlockingMode originalBlockingMode = forgetMutationStrategy.getBlockingMode();
++    boolean originalDlMode = forgetMutationStrategy.isDefeasibleLogicMode();
+     Set<String> originalNonInternal = new HashSet<>(forgetMutationStrategy.getNonInternalActions());
+ 
+     try {
+@@ -104,6 +107,15 @@ public class ForgetMutationController {
+         forgetMutationStrategy.setMaxVariantsPerRule(maxVariantsPerRule);
+       }
+ 
++      if (forgetSemantics != null) {
++        String s = forgetSemantics.trim().toUpperCase();
++        if (s.equals("DL") || s.equals("DEFEASIBLE") || s.equals("ALGORITHM2")) {
++          forgetMutationStrategy.setDefeasibleLogicMode(true);
++        } else if (!s.equals("ALGORITHM1") && !s.isEmpty()) {
++          return ResponseEntity.status(400).body("Unknown Forget-Semantics: " + forgetSemantics);
++        }
++      }
++
+       if (blockingModeHeader != null) {
+         try {
+           BlockingMode parsedMode = parseBlockingMode(blockingModeHeader);
+@@ -246,6 +258,7 @@ public class ForgetMutationController {
+     } finally {
+       forgetMutationStrategy.setMaxVariantsPerRule(originalMaxVariants);
+       forgetMutationStrategy.setBlockingMode(originalBlockingMode);
++      forgetMutationStrategy.setDefeasibleLogicMode(originalDlMode);
+       forgetMutationStrategy.setNonInternalActions(originalNonInternal);
+       // Restore the static derivation caps so the next request starts fresh
+       // even if this one tripped them (e.g. INFINITE mode that caused OOM).
+diff --git a/src/main/java/com/xmen/service/forget/dl/AmbiguityBlockingReasoner.java b/src/main/java/com/xmen/service/forget/dl/AmbiguityBlockingReasoner.java
+new file mode 100644
+index 0000000..4446f26
+--- /dev/null
++++ b/src/main/java/com/xmen/service/forget/dl/AmbiguityBlockingReasoner.java
+@@ -0,0 +1,161 @@
++package com.xmen.service.forget.dl;
++
++import com.xmen.service.forget.dl.DefeasibleTheory.Literal;
++import com.xmen.service.forget.dl.DefeasibleTheory.Rule;
++import com.xmen.service.forget.dl.DefeasibleTheory.RuleKind;
++import java.util.ArrayList;
++import java.util.HashMap;
++import java.util.HashSet;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++
++/**
++ * Reference implementation of the proof conditions of ambiguity-blocking DL(&#8706;) with team
++ * defeat, as given by Antoniou, Billington, Governatori and Maher, "Representation Results for
++ * Defeasible Logic" (ACM TOCL 2001), cited as [29] in the paper:
++ *
++ * <pre>
++ * +Δq: q ∈ F, or ∃r ∈ Rs[q] ∀a ∈ A(r): +Δa
++ * -Δq: q ∉ F and ∀r ∈ Rs[q] ∃a ∈ A(r): -Δa
++ * +∂q: +Δq, or (2.1) ∃r ∈ Rsd[q] ∀a ∈ A(r): +∂a, (2.2) -Δ∼q, and
++ *      (2.3) ∀s ∈ R[∼q]: (2.3.1) ∃a ∈ A(s): -∂a, or
++ *                        (2.3.2) ∃t ∈ Rsd[q] with ∀a ∈ A(t): +∂a and t &gt; s
++ * -∂q: -Δq and ( (2.1) ∀r ∈ Rsd[q] ∃a ∈ A(r): -∂a, or (2.2) +Δ∼q, or
++ *      (2.3) ∃s ∈ R[∼q]: (2.3.1) ∀a ∈ A(s): +∂a and
++ *                        (2.3.2) ∀t ∈ Rsd[q]: ∃a ∈ A(t): -∂a, or not t &gt; s )
++ * </pre>
++ *
++ * Conclusions are the least fixpoint of these (monotone) conditions, i.e. exactly the tags that
++ * have finite proofs. Literals on positive loops therefore receive neither +&#8706; nor -&#8706;.
++ * Defeaters never support their head and never act as team members in (2.3.2).
++ */
++public final class AmbiguityBlockingReasoner implements DefeasibleReasoner {
++
++  @Override
++  public Conclusions reason(DefeasibleTheory theory) {
++    Map<Literal, List<Rule>> all = new HashMap<>();
++    Map<Literal, List<Rule>> strict = new HashMap<>();
++    Map<Literal, List<Rule>> support = new HashMap<>(); // strict + defeasible
++    for (Rule r : theory.rules()) {
++      all.computeIfAbsent(r.head(), k -> new ArrayList<>()).add(r);
++      if (r.kind() == RuleKind.STRICT) {
++        strict.computeIfAbsent(r.head(), k -> new ArrayList<>()).add(r);
++      }
++      if (r.kind() != RuleKind.DEFEATER) {
++        support.computeIfAbsent(r.head(), k -> new ArrayList<>()).add(r);
++      }
++    }
++    List<Literal> universe = new ArrayList<>();
++    for (String a : theory.atoms()) {
++      universe.add(Literal.pos(a));
++      universe.add(Literal.neg(a));
++    }
++
++    Set<Literal> pd = new HashSet<>();
++    Set<Literal> md = new HashSet<>();
++    Set<Literal> pp = new HashSet<>();
++    Set<Literal> mp = new HashSet<>();
++    Set<Literal> facts = theory.facts();
++
++    boolean changed = true;
++    while (changed) {
++      changed = false;
++      for (Literal q : universe) {
++        List<Rule> sq = strict.getOrDefault(q, List.of());
++        if (!pd.contains(q)
++            && (facts.contains(q) || sq.stream().anyMatch(r -> allIn(r.body(), pd)))) {
++          pd.add(q);
++          changed = true;
++        }
++        if (!md.contains(q)
++            && !facts.contains(q)
++            && sq.stream().allMatch(r -> anyIn(r.body(), md))) {
++          md.add(q);
++          changed = true;
++        }
++      }
++      for (Literal q : universe) {
++        Literal nq = q.complement();
++        List<Rule> supQ = support.getOrDefault(q, List.of());
++        List<Rule> attackers = all.getOrDefault(nq, List.of());
++        if (!pp.contains(q) && plusPartial(theory, q, nq, supQ, attackers, pd, md, pp, mp)) {
++          pp.add(q);
++          changed = true;
++        }
++        if (!mp.contains(q) && minusPartial(theory, q, nq, supQ, attackers, pd, md, pp, mp)) {
++          mp.add(q);
++          changed = true;
++        }
++      }
++    }
++    return new Conclusions(pd, md, pp, mp);
++  }
++
++  private static boolean plusPartial(
++      DefeasibleTheory theory, Literal q, Literal nq, List<Rule> supQ, List<Rule> attackers,
++      Set<Literal> pd, Set<Literal> md, Set<Literal> pp, Set<Literal> mp) {
++    if (pd.contains(q)) {
++      return true;
++    }
++    boolean applicableSupport = supQ.stream().anyMatch(r -> allIn(r.body(), pp));
++    if (!applicableSupport || !md.contains(nq)) {
++      return false;
++    }
++    for (Rule s : attackers) {
++      boolean discarded = anyIn(s.body(), mp);
++      if (discarded) {
++        continue;
++      }
++      boolean overruled = supQ.stream()
++          .anyMatch(t -> allIn(t.body(), pp) && theory.isSuperior(t.label(), s.label()));
++      if (!overruled) {
++        return false;
++      }
++    }
++    return true;
++  }
++
++  private static boolean minusPartial(
++      DefeasibleTheory theory, Literal q, Literal nq, List<Rule> supQ, List<Rule> attackers,
++      Set<Literal> pd, Set<Literal> md, Set<Literal> pp, Set<Literal> mp) {
++    if (!md.contains(q)) {
++      return false;
++    }
++    if (supQ.stream().allMatch(r -> anyIn(r.body(), mp))) {
++      return true;
++    }
++    if (pd.contains(nq)) {
++      return true;
++    }
++    for (Rule s : attackers) {
++      if (!allIn(s.body(), pp)) {
++        continue;
++      }
++      boolean unanswered = supQ.stream()
++          .allMatch(t -> anyIn(t.body(), mp) || !theory.isSuperior(t.label(), s.label()));
++      if (unanswered) {
++        return true;
++      }
++    }
++    return false;
++  }
++
++  private static boolean allIn(List<Literal> body, Set<Literal> set) {
++    for (Literal l : body) {
++      if (!set.contains(l)) {
++        return false;
++      }
++    }
++    return true;
++  }
++
++  private static boolean anyIn(List<Literal> body, Set<Literal> set) {
++    for (Literal l : body) {
++      if (set.contains(l)) {
++        return true;
++      }
++    }
++    return false;
++  }
++}
+diff --git a/src/main/java/com/xmen/service/forget/dl/DefeasibleReasoner.java b/src/main/java/com/xmen/service/forget/dl/DefeasibleReasoner.java
+new file mode 100644
+index 0000000..988c572
+--- /dev/null
++++ b/src/main/java/com/xmen/service/forget/dl/DefeasibleReasoner.java
+@@ -0,0 +1,76 @@
++package com.xmen.service.forget.dl;
++
++import com.xmen.service.forget.dl.DefeasibleTheory.Literal;
++import java.util.Collections;
++import java.util.Set;
++import java.util.TreeSet;
++
++/**
++ * Computes the tagged conclusions of a finite propositional defeasible theory.
++ *
++ * <p>The single production implementation is {@link AmbiguityBlockingReasoner}. The interface is
++ * the seam for qualifying an external backend (e.g. SPINdle) against the same conformance suite.
++ */
++public interface DefeasibleReasoner {
++
++  /** The four proof tags of DL(&#8706;). */
++  enum Tag {
++    /** +&#916;: definitely provable (facts and strict rules only). */
++    PLUS_DELTA,
++    /** -&#916;: provably not definitely provable. */
++    MINUS_DELTA,
++    /** +&#8706;: defeasibly provable. */
++    PLUS_PARTIAL,
++    /** -&#8706;: provably not defeasibly provable (a conclusion, not a failed search). */
++    MINUS_PARTIAL
++  }
++
++  Conclusions reason(DefeasibleTheory theory);
++
++  /**
++   * The four disjoint-by-tag conclusion sets. A literal may have neither +&#8706; nor -&#8706;
++   * (e.g. in a positive loop); callers must treat that as undecided, never as negative.
++   */
++  record Conclusions(
++      Set<Literal> plusDelta,
++      Set<Literal> minusDelta,
++      Set<Literal> plusPartial,
++      Set<Literal> minusPartial) {
++
++    public Conclusions {
++      plusDelta = Collections.unmodifiableSet(new TreeSet<>(plusDelta));
++      minusDelta = Collections.unmodifiableSet(new TreeSet<>(minusDelta));
++      plusPartial = Collections.unmodifiableSet(new TreeSet<>(plusPartial));
++      minusPartial = Collections.unmodifiableSet(new TreeSet<>(minusPartial));
++    }
++
++    public boolean has(Tag tag, Literal l) {
++      return switch (tag) {
++        case PLUS_DELTA -> plusDelta.contains(l);
++        case MINUS_DELTA -> minusDelta.contains(l);
++        case PLUS_PARTIAL -> plusPartial.contains(l);
++        case MINUS_PARTIAL -> minusPartial.contains(l);
++      };
++    }
++
++    public boolean provable(Literal l) {
++      return plusPartial.contains(l);
++    }
++
++    public boolean refuted(Literal l) {
++      return minusPartial.contains(l);
++    }
++
++    /** True iff exactly one of +&#8706;l and -&#8706;l holds. */
++    public boolean decided(Literal l) {
++      return plusPartial.contains(l) ^ minusPartial.contains(l);
++    }
++
++    /** Short rendering of the defeasible tag of {@code l}: "+∂", "-∂", "both" or "none". */
++    public String partialTag(Literal l) {
++      boolean p = plusPartial.contains(l);
++      boolean m = minusPartial.contains(l);
++      return p && m ? "both" : p ? "+∂" : m ? "-∂" : "none";
++    }
++  }
++}
+diff --git a/src/main/java/com/xmen/service/forget/dl/DefeasibleTheory.java b/src/main/java/com/xmen/service/forget/dl/DefeasibleTheory.java
+new file mode 100644
+index 0000000..0530ee9
+--- /dev/null
++++ b/src/main/java/com/xmen/service/forget/dl/DefeasibleTheory.java
+@@ -0,0 +1,271 @@
++package com.xmen.service.forget.dl;
++
++import java.util.ArrayList;
++import java.util.Collections;
++import java.util.HashMap;
++import java.util.HashSet;
++import java.util.LinkedHashMap;
++import java.util.LinkedHashSet;
++import java.util.List;
++import java.util.Map;
++import java.util.Objects;
++import java.util.Set;
++import java.util.TreeSet;
++
++/**
++ * A finite, ground, propositional defeasible theory D = (F, R, &gt;) as used in Section 7.1 of the
++ * Forget paper (Antoniou et al., ambiguity-blocking DL(&#8706;) with team defeat).
++ *
++ * <p>Literals carry an explicit polarity: {@code ¬p} is the complementary literal of {@code p},
++ * never negation-as-failure. The superiority relation must be acyclic and may only relate rules
++ * with complementary heads (paper, Section 7.1).
++ */
++public final class DefeasibleTheory {
++
++  /** Rule types: strict (→), defeasible (⇒), defeater (⇝). */
++  public enum RuleKind {
++    STRICT("->"),
++    DEFEASIBLE("=>"),
++    DEFEATER("~>");
++
++    private final String arrow;
++
++    RuleKind(String arrow) {
++      this.arrow = arrow;
++    }
++
++    public String arrow() {
++      return arrow;
++    }
++  }
++
++  /** A literal: an atom or its explicit complement. */
++  public record Literal(String atom, boolean negated) implements Comparable<Literal> {
++    public Literal {
++      Objects.requireNonNull(atom, "atom");
++      if (atom.isBlank()) {
++        throw new IllegalArgumentException("atom must not be blank");
++      }
++    }
++
++    public static Literal pos(String atom) {
++      return new Literal(atom, false);
++    }
++
++    public static Literal neg(String atom) {
++      return new Literal(atom, true);
++    }
++
++    public Literal complement() {
++      return new Literal(atom, !negated);
++    }
++
++    @Override
++    public int compareTo(Literal o) {
++      int c = atom.compareTo(o.atom);
++      return c != 0 ? c : Boolean.compare(negated, o.negated);
++    }
++
++    @Override
++    public String toString() {
++      return negated ? "¬" + atom : atom;
++    }
++  }
++
++  /** A labelled rule {@code label: body kind head}. */
++  public record Rule(String label, RuleKind kind, List<Literal> body, Literal head) {
++    public Rule {
++      Objects.requireNonNull(label, "label");
++      Objects.requireNonNull(kind, "kind");
++      Objects.requireNonNull(head, "head");
++      body = List.copyOf(body);
++      if (label.isBlank()) {
++        throw new IllegalArgumentException("rule label must not be blank");
++      }
++    }
++
++    @Override
++    public String toString() {
++      return label + ": " + String.join(", ", body.stream().map(Literal::toString).toList())
++          + " " + kind.arrow() + " " + head;
++    }
++  }
++
++  private final Set<Literal> facts;
++  private final List<Rule> rules;
++  private final Map<String, Rule> rulesByLabel;
++  private final Map<String, Set<String>> superior; // t -> {s | t > s}
++  private final Set<String> atoms;
++
++  private DefeasibleTheory(
++      Set<Literal> facts, List<Rule> rules, Map<String, Set<String>> superior,
++      Set<String> declaredAtoms) {
++    this.facts = Collections.unmodifiableSet(new TreeSet<>(facts));
++    this.rules = List.copyOf(rules);
++    Map<String, Rule> byLabel = new LinkedHashMap<>();
++    for (Rule r : rules) {
++      if (byLabel.put(r.label(), r) != null) {
++        throw new IllegalArgumentException("duplicate rule label: " + r.label());
++      }
++    }
++    this.rulesByLabel = Collections.unmodifiableMap(byLabel);
++    Map<String, Set<String>> sup = new HashMap<>();
++    superior.forEach((k, v) -> sup.put(k, Collections.unmodifiableSet(new TreeSet<>(v))));
++    this.superior = Collections.unmodifiableMap(sup);
++    Set<String> all = new TreeSet<>(declaredAtoms);
++    facts.forEach(f -> all.add(f.atom()));
++    for (Rule r : rules) {
++      all.add(r.head().atom());
++      r.body().forEach(b -> all.add(b.atom()));
++    }
++    this.atoms = Collections.unmodifiableSet(all);
++    validateSuperiority();
++  }
++
++  private void validateSuperiority() {
++    for (Map.Entry<String, Set<String>> e : superior.entrySet()) {
++      Rule t = rulesByLabel.get(e.getKey());
++      if (t == null) {
++        throw new IllegalArgumentException("superiority refers to unknown rule: " + e.getKey());
++      }
++      for (String sLabel : e.getValue()) {
++        Rule s = rulesByLabel.get(sLabel);
++        if (s == null) {
++          throw new IllegalArgumentException("superiority refers to unknown rule: " + sLabel);
++        }
++        if (!t.head().equals(s.head().complement())) {
++          throw new IllegalArgumentException(
++              "superiority " + t.label() + " > " + s.label() + " relates non-complementary heads");
++        }
++      }
++    }
++    // Acyclicity (DFS with colours).
++    Map<String, Integer> colour = new HashMap<>();
++    for (String start : superior.keySet()) {
++      if (hasCycle(start, colour)) {
++        throw new IllegalArgumentException("superiority relation is cyclic (involves " + start + ")");
++      }
++    }
++  }
++
++  private boolean hasCycle(String node, Map<String, Integer> colour) {
++    Integer c = colour.get(node);
++    if (c != null) {
++      return c == 1;
++    }
++    colour.put(node, 1);
++    for (String next : superior.getOrDefault(node, Set.of())) {
++      if (hasCycle(next, colour)) {
++        return true;
++      }
++    }
++    colour.put(node, 2);
++    return false;
++  }
++
++  public Set<Literal> facts() {
++    return facts;
++  }
++
++  public List<Rule> rules() {
++    return rules;
++  }
++
++  public Rule rule(String label) {
++    return rulesByLabel.get(label);
++  }
++
++  /** All atoms of the theory, including atoms declared only for querying. */
++  public Set<String> atoms() {
++    return atoms;
++  }
++
++  /** Returns true iff {@code t > s}. */
++  public boolean isSuperior(String t, String s) {
++    return superior.getOrDefault(t, Set.of()).contains(s);
++  }
++
++  /** Deterministic pairs (t, s) with t &gt; s. */
++  public List<String[]> superiorityPairs() {
++    List<String[]> out = new ArrayList<>();
++    new TreeSet<>(superior.keySet())
++        .forEach(t -> superior.get(t).forEach(s -> out.add(new String[] {t, s})));
++    return out;
++  }
++
++  /** Canonical, deterministic text rendering (stable across runs; used for export and tests). */
++  public String toText() {
++    StringBuilder sb = new StringBuilder();
++    for (String a : atoms) {
++      sb.append("atom ").append(a).append('\n');
++    }
++    for (Literal f : facts) {
++      sb.append("fact ").append(f).append('\n');
++    }
++    rules.stream()
++        .sorted((a, b) -> a.label().compareTo(b.label()))
++        .forEach(r -> sb.append("rule ").append(r).append('\n'));
++    for (String[] p : superiorityPairs()) {
++      sb.append("sup ").append(p[0]).append(" > ").append(p[1]).append('\n');
++    }
++    return sb.toString();
++  }
++
++  public static Builder builder() {
++    return new Builder();
++  }
++
++  /** Mutable builder; {@link #build()} validates labels and superiority. */
++  public static final class Builder {
++    private final Set<Literal> facts = new LinkedHashSet<>();
++    private final List<Rule> rules = new ArrayList<>();
++    private final Set<String> labels = new HashSet<>();
++    private final Map<String, Set<String>> superior = new LinkedHashMap<>();
++    private final Set<String> declared = new LinkedHashSet<>();
++
++    public Builder fact(Literal l) {
++      facts.add(l);
++      return this;
++    }
++
++    public Builder rule(Rule r) {
++      if (!labels.add(r.label())) {
++        throw new IllegalArgumentException("duplicate rule label: " + r.label());
++      }
++      rules.add(r);
++      return this;
++    }
++
++    public boolean hasRule(String label) {
++      return labels.contains(label);
++    }
++
++    public Builder strict(String label, Literal head, Literal... body) {
++      return rule(new Rule(label, RuleKind.STRICT, List.of(body), head));
++    }
++
++    public Builder defeasible(String label, Literal head, Literal... body) {
++      return rule(new Rule(label, RuleKind.DEFEASIBLE, List.of(body), head));
++    }
++
++    public Builder defeater(String label, Literal head, Literal... body) {
++      return rule(new Rule(label, RuleKind.DEFEATER, List.of(body), head));
++    }
++
++    /** Records {@code t > s}. */
++    public Builder superior(String t, String s) {
++      superior.computeIfAbsent(t, k -> new LinkedHashSet<>()).add(s);
++      return this;
++    }
++
++    /** Declares an atom so that it receives tags even if no fact or rule mentions it. */
++    public Builder declare(String atom) {
++      declared.add(atom);
++      return this;
++    }
++
++    public DefeasibleTheory build() {
++      return new DefeasibleTheory(facts, rules, superior, declared);
++    }
++  }
++}
+diff --git a/src/main/java/com/xmen/service/forget/dl/ForgetBlocking.java b/src/main/java/com/xmen/service/forget/dl/ForgetBlocking.java
+new file mode 100644
+index 0000000..3b40389
+--- /dev/null
++++ b/src/main/java/com/xmen/service/forget/dl/ForgetBlocking.java
+@@ -0,0 +1,104 @@
++package com.xmen.service.forget.dl;
++
++import com.xmen.model.Message;
++import com.xmen.model.Pair;
++import com.xmen.service.forget.ForgetContext.BlockingMode;
++import java.util.Collection;
++import java.util.LinkedHashSet;
++import java.util.List;
++import java.util.Optional;
++import java.util.Set;
++
++/**
++ * Definition 5: {@code Blocked(Hyp_π, Forget)} for the three closure cases.
++ *
++ * <ul>
++ *   <li>Case 1: h ∈ Forget.
++ *   <li>Case 2: Forget ⊢ h using only pair composition and decomposition.
++ *   <li>Case 3: Forget ⊢ h using all supported Dolev-Yao rules.
++ * </ul>
++ *
++ * Derivability is decided by the standard analysis/synthesis saturation, which terminates because
++ * the analysed set stays within the subterms of Forget. Blockedness depends only on h and the
++ * Forget set, not on the derivation or target in which h occurs.
++ */
++public final class ForgetBlocking {
++
++  private final BlockingMode mode;
++  private final Set<String> privateFunctions;
++  private final Set<Message> forget;
++  private final Set<Message> analysed;
++
++  public ForgetBlocking(Set<Message> forget, BlockingMode mode, Set<String> privateFunctions) {
++    this.mode = mode;
++    this.privateFunctions = Set.copyOf(privateFunctions);
++    this.forget = Set.copyOf(forget);
++    this.analysed = mode == BlockingMode.CASE1_WEAK ? this.forget : analyse();
++  }
++
++  public BlockingMode mode() {
++    return mode;
++  }
++
++  public boolean isBlocked(Message h) {
++    return switch (mode) {
++      case CASE1_WEAK -> forget.contains(h);
++      case CASE2_PAIRING, CASE3_FULL_DY -> synthesise(h);
++    };
++  }
++
++  /** Blocked subset of {@code hyps}, in canonical order. */
++  public Set<Message> blocked(Collection<Message> hyps) {
++    Set<Message> out = new LinkedHashSet<>();
++    for (Message h : Terms.sorted(hyps)) {
++      if (isBlocked(h)) {
++        out.add(h);
++      }
++    }
++    return out;
++  }
++
++  private Set<Message> analyse() {
++    Set<Message> a = new LinkedHashSet<>(forget);
++    boolean changed = true;
++    while (changed) {
++      changed = false;
++      for (Message x : List.copyOf(a)) {
++        if (x instanceof Pair p) {
++          changed |= a.add(p.getLeft());
++          changed |= a.add(p.getRight());
++        }
++        if (mode == BlockingMode.CASE3_FULL_DY) {
++          Optional<Terms.Cipher> c = Terms.symmetric(x).or(() -> Terms.asymmetric(x));
++          if (c.isPresent() && synthesise(c.get().decryptionKey(), a)) {
++            changed |= a.add(c.get().plaintext());
++          }
++        }
++      }
++    }
++    return a;
++  }
++
++  private boolean synthesise(Message x) {
++    return synthesise(x, analysed);
++  }
++
++  private boolean synthesise(Message x, Set<Message> base) {
++    if (base.contains(x)) {
++      return true;
++    }
++    boolean composable = mode == BlockingMode.CASE2_PAIRING
++        ? x instanceof Pair
++        : mode == BlockingMode.CASE3_FULL_DY
++            && Terms.constructorLabel(x, privateFunctions).isPresent();
++    if (!composable) {
++      return false;
++    }
++    for (Message arg : Terms.args(x)) {
++      if (!synthesise(arg, base)) {
++        return false;
++      }
++    }
++    return true;
++  }
++}
+diff --git a/src/main/java/com/xmen/service/forget/dl/ForgetDlBridge.java b/src/main/java/com/xmen/service/forget/dl/ForgetDlBridge.java
+new file mode 100644
+index 0000000..9db14c4
+--- /dev/null
++++ b/src/main/java/com/xmen/service/forget/dl/ForgetDlBridge.java
+@@ -0,0 +1,163 @@
++package com.xmen.service.forget.dl;
++
++import com.xmen.model.Atom;
++import com.xmen.model.Encrypt;
++import com.xmen.model.Message;
++import com.xmen.model.Pair;
++import com.xmen.model.PredictiveFunction;
++import com.xmen.service.forget.ForgetContext.BlockingMode;
++import com.xmen.service.forget.dl.ForgetDlModel.CueModel;
++import com.xmen.service.forget.dl.ForgetDlModel.HumanState;
++import com.xmen.service.forget.dl.ForgetDlModel.ProceduralState;
++import com.xmen.service.forget.dl.ForgetDlModel.TransitionInput;
++import java.util.ArrayList;
++import java.util.LinkedHashMap;
++import java.util.LinkedHashSet;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++import java.util.function.Function;
++
++/**
++ * Adapter between the X-Men Forget pipeline (ForgetContext, parsed rule payloads, Forget(x)
++ * annotations) and {@link ForgetDlEngine}. Pure Java so it can be tested without Spring.
++ *
++ * <p>Host-representation choices (semantic contract A9, A10):
++ *
++ * <ul>
++ *   <li>Tamarin fresh-variable tildes are ignored ({@code ~pw1} ≡ {@code pw1}), as the host's
++ *       {@code canonicalize} already does.
++ *   <li>Public constants ({@code $X} and quoted {@code 'c'}) occurring in the intended send or in
++ *       a candidate are available to the agent; they are added to K for derivation only and are
++ *       not written back into the host state.
++ * </ul>
++ */
++public final class ForgetDlBridge {
++
++  /**
++   * Decision plus what the host needs to rewrite the rule.
++   *
++   * @param replacementSubstitutions one map {blocked → replacement} per Replace variant, in the
++   *     engine's deterministic order; keys and values are in the bridge's normalised form
++   * @param knowledgeAfter successor knowledge in host representation
++   * @param forgetAfter successor Forget set in host representation
++   */
++  public record Outcome(ForgetDlResult result, List<Map<Message, Message>> replacementSubstitutions,
++      List<Message> replacementTargets, Set<Message> knowledgeAfter, Set<Message> forgetAfter) {}
++
++  private final ForgetDlEngine engine;
++
++  public ForgetDlBridge() {
++    this(new ForgetDlEngine());
++  }
++
++  public ForgetDlBridge(ForgetDlEngine engine) {
++    this.engine = engine;
++  }
++
++  public Outcome decide(Set<Message> knowledge, Set<Message> forget, Message received,
++      List<Message> forgotten, Set<Message> forgottenUsedInInternalActions, Message target,
++      Function<Message, String> labelOf, BlockingMode mode) {
++    return decide(knowledge, forget, ProceduralState.EMPTY, received, forgotten,
++        forgottenUsedInInternalActions, target, labelOf, mode, CueModel.NONE);
++  }
++
++  public Outcome decide(Set<Message> knowledge, Set<Message> forget, ProceduralState procedural,
++      Message received, List<Message> forgotten, Set<Message> forgottenUsedInInternalActions,
++      Message target, Function<Message, String> labelOf, BlockingMode mode, CueModel cues) {
++    Map<Message, Message> original = new LinkedHashMap<>();
++    Set<Message> k = normaliseAll(knowledge, original);
++    Set<Message> f = normaliseAll(forget, original);
++    Message m1 = received == null ? null : remember(normalise(received), received, original);
++    Message m2 = target == null ? null : normalise(target);
++
++    Set<Message> derivationK = new LinkedHashSet<>(k);
++    if (m2 != null) {
++      for (Message s : Terms.subterms(m2)) {
++        if (isPublicConstant(s)) {
++          derivationK.add(s);
++        }
++      }
++    }
++    TransitionInput.Builder b = TransitionInput.builder(new HumanState(derivationK, f, procedural))
++        .received(m1).send(m2).closure(mode).cues(cues);
++    for (Message x : forgotten) {
++      b.forget(normalise(x));
++    }
++    for (Message x : forgottenUsedInInternalActions) {
++      b.internalAction(normalise(x));
++    }
++    Set<Message> labelled = new LinkedHashSet<>(derivationK);
++    if (m1 != null) {
++      labelled.add(m1);
++    }
++    for (Message x : labelled) {
++      String l = labelOf.apply(original.getOrDefault(x, x));
++      if (l == null) {
++        l = labelOf.apply(x);
++      }
++      if (l != null) {
++        b.label(x, l);
++      }
++    }
++    ForgetDlResult r = engine.run(b.build());
++
++    List<Map<Message, Message>> subs = new ArrayList<>();
++    List<Message> targets = new ArrayList<>();
++    for (ForgetDlResult.Candidate c : r.replacements()) {
++      subs.add(c.substitutions().get(0));
++      targets.add(c.target());
++    }
++    Set<Message> kAfter = new LinkedHashSet<>();
++    Set<Message> hostK = new LinkedHashSet<>(k);
++    if (m1 != null) {
++      hostK.add(m1);
++    }
++    for (Message x : r.after().knowledge()) {
++      if (hostK.contains(x)) {
++        kAfter.add(original.getOrDefault(x, x)); // A10: injected public constants are dropped
++      }
++    }
++    Set<Message> fAfter = new LinkedHashSet<>();
++    for (Message x : r.after().forget()) {
++      fAfter.add(original.getOrDefault(x, x));
++    }
++    return new Outcome(r, List.copyOf(subs), List.copyOf(targets), kAfter, fAfter);
++  }
++
++  private static Set<Message> normaliseAll(Set<Message> ms, Map<Message, Message> original) {
++    Set<Message> out = new LinkedHashSet<>();
++    for (Message m : ms) {
++      out.add(remember(normalise(m), m, original));
++    }
++    return out;
++  }
++
++  private static Message remember(Message norm, Message orig, Map<Message, Message> original) {
++    original.putIfAbsent(norm, orig);
++    return norm;
++  }
++
++  static boolean isPublicConstant(Message m) {
++    return m instanceof Atom a
++        && (a.getValue().startsWith("$") || (a.getValue().startsWith("'") && a.getValue().endsWith("'")));
++  }
++
++  /** Removes Tamarin fresh-variable tildes from atoms, recursively. */
++  static Message normalise(Message m) {
++    if (m instanceof Atom a) {
++      String v = a.getValue();
++      return v.startsWith("~") && v.length() > 1 ? new Atom(v.substring(1)) : m;
++    }
++    if (m instanceof Pair p) {
++      return new Pair(normalise(p.getLeft()), normalise(p.getRight()));
++    }
++    if (m instanceof Encrypt e) {
++      return new Encrypt(normalise(e.getMsg()), normalise(e.getKey()));
++    }
++    if (m instanceof PredictiveFunction fn) {
++      return new PredictiveFunction(fn.getName(), fn.getArgs().stream().map(ForgetDlBridge::normalise).toList());
++    }
++    return m;
++  }
++}
+diff --git a/src/main/java/com/xmen/service/forget/dl/ForgetDlCompiler.java b/src/main/java/com/xmen/service/forget/dl/ForgetDlCompiler.java
+new file mode 100644
+index 0000000..3031dbf
+--- /dev/null
++++ b/src/main/java/com/xmen/service/forget/dl/ForgetDlCompiler.java
+@@ -0,0 +1,191 @@
++package com.xmen.service.forget.dl;
++
++import com.xmen.model.Derivation;
++import com.xmen.model.Message;
++import com.xmen.service.forget.dl.DefeasibleTheory.Literal;
++import com.xmen.service.forget.dl.ForgetDlModel.Association;
++import com.xmen.service.forget.dl.ForgetDlModel.CueModel;
++import com.xmen.service.forget.dl.ForgetDlModel.ProceduralState;
++import java.util.ArrayList;
++import java.util.Collections;
++import java.util.LinkedHashMap;
++import java.util.LinkedHashSet;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++import java.util.TreeMap;
++
++/**
++ * {@code compile(H, i+1, T, K)} of Algorithm 2, line 20. One theory is compiled for the whole
++ * candidate set T; atoms are indexed by target, so joint and separate compilation coincide.
++ *
++ * <p>Vocabulary (ground propositional atoms; the agent/state context is implicit in the theory):
++ *
++ * <pre>
++ * Known(x)            fact, x ∈ K                                  (§7.1)
++ * Lapsed(h)           fact, h ∈ ⋃_{t∈T} ⋃_{π∈Π_t} Blocked(Hyp_π)   (§7.1, §7.3)
++ * ContextCue(c,h)     fact, h lapsed, c ∈ Pres, (c,h) ∈ Assoc      (§7.5)
++ * LapsedRule(r)       fact, r ∈ R_H  (paper: Lapsed(Rule(r)))      (§7.6)
++ * LapsedProc(π)       fact, π ∈ Π_H  (paper: Lapsed(Proc(π)))      (§7.6)
++ * d:π      Known(h1..hk) ⇒ Via(π,t)
++ * use:π    Via(π,t) → Usable(t)
++ * w:π:h    Lapsed(h) ⇝ ¬Via(π,t)         for every h ∈ Hyp_π       w:π:h > d:π
++ * rho:π:h:c ContextCue(c,h) ⇒ Via(π,t)   h ∈ Blocked(Hyp_π), (c,h) ∈ Assoc; rho:π:h:c > w:π:h
++ * wr:π:r   LapsedRule(r) ⇝ ¬Via(π,t)     for every r ∈ Rules(π)    wr:π:r > d:π
++ * wp:π     LapsedProc(π) ⇝ ¬Via(π,t)                               wp:π > d:π
++ * </pre>
++ *
++ * Defeaters and reinstaters are emitted whether or not they are applicable; facts decide
++ * applicability. Usable(t) is declared for every t ∈ T, including targets without derivations.
++ */
++public final class ForgetDlCompiler {
++
++  /** Per-derivation compilation record used for decisions and the cognitive trace. */
++  public record DerivationEntry(
++      Message target,
++      Derivation derivation,
++      String procedureId,
++      Set<Message> hypotheses,
++      Set<Message> blockedHypotheses,
++      Set<String> rules,
++      Literal via,
++      String baseLabel,
++      Map<Message, String> declarativeDefeaters,
++      Map<String, String> ruleDefeaters,
++      String procedureDefeater,
++      Map<String, Message> reinstaters) {}
++
++  /** Compiled theory plus the index needed to read it back. */
++  public record Compiled(
++      DefeasibleTheory theory,
++      Map<Message, Literal> usable,
++      Map<Message, List<DerivationEntry>> entries,
++      Set<Message> lapsedMessages) {}
++
++  public Compiled compile(
++      Set<Message> knowledge,
++      ForgetBlocking blocking,
++      ProceduralState procedural,
++      CueModel cues,
++      Map<Message, List<Derivation>> derivationsByTarget) {
++
++    DefeasibleTheory.Builder b = DefeasibleTheory.builder();
++    for (Message x : Terms.sorted(knowledge)) {
++      b.fact(known(x));
++    }
++
++    // Lapsed(h): union of blocked hypotheses over all derivations of all targets.
++    Set<Message> lapsed = new LinkedHashSet<>();
++    Map<Message, List<Derivation>> ordered = new TreeMap<>(Terms.ORDER);
++    ordered.putAll(derivationsByTarget);
++    for (List<Derivation> ds : ordered.values()) {
++      for (Derivation d : ds) {
++        lapsed.addAll(blocking.blocked(NormalDerivations.hypotheses(d)));
++      }
++    }
++    for (Message h : Terms.sorted(lapsed)) {
++      b.fact(lapsedAtom(h));
++    }
++    for (Association a : cues.associations()) {
++      if (lapsed.contains(a.message()) && cues.present().contains(a.cue())) {
++        b.fact(contextCue(a.cue(), a.message()));
++      }
++    }
++    for (String r : procedural.forgottenRules()) {
++      b.fact(lapsedRule(r));
++    }
++    for (String p : procedural.forgottenProcedures()) {
++      b.fact(lapsedProc(p));
++    }
++
++    Map<Message, Literal> usable = new LinkedHashMap<>();
++    Map<Message, List<DerivationEntry>> entries = new LinkedHashMap<>();
++    Map<String, Message> seenIds = new LinkedHashMap<>();
++    for (Map.Entry<Message, List<Derivation>> e : ordered.entrySet()) {
++      Message t = e.getKey();
++      Literal u = Literal.pos("Usable(" + Terms.canonical(t) + ")");
++      usable.put(t, u);
++      b.declare(u.atom());
++      List<DerivationEntry> list = new ArrayList<>();
++      for (Derivation d : e.getValue()) {
++        list.add(compileDerivation(b, t, d, u, blocking, cues, seenIds));
++      }
++      entries.put(t, Collections.unmodifiableList(list));
++    }
++    return new Compiled(b.build(), Collections.unmodifiableMap(usable),
++        Collections.unmodifiableMap(entries), Collections.unmodifiableSet(lapsed));
++  }
++
++  private DerivationEntry compileDerivation(DefeasibleTheory.Builder b, Message t, Derivation d,
++      Literal usable, ForgetBlocking blocking, CueModel cues, Map<String, Message> seenIds) {
++    String pid = NormalDerivations.procedureId(d);
++    if (seenIds.containsKey(pid)) {
++      throw new IllegalStateException("procedure id collision or duplicate derivation: " + pid);
++    }
++    seenIds.put(pid, t);
++    Set<Message> hyps = new LinkedHashSet<>(Terms.sorted(NormalDerivations.hypotheses(d)));
++    Set<Message> blocked = blocking.blocked(hyps);
++    Set<String> rules = NormalDerivations.rules(d);
++    Literal via = Literal.pos("Via(" + pid + "," + Terms.canonical(t) + ")");
++
++    String base = "d:" + pid;
++    b.rule(new DefeasibleTheory.Rule(base, DefeasibleTheory.RuleKind.DEFEASIBLE,
++        hyps.stream().map(ForgetDlCompiler::known).toList(), via));
++    b.strict("use:" + pid, usable, via);
++
++    Map<Message, String> decl = new LinkedHashMap<>();
++    for (Message h : hyps) {
++      String w = "w:" + pid + ":" + Terms.canonical(h);
++      b.defeater(w, via.complement(), lapsedAtom(h));
++      b.superior(w, base);
++      decl.put(h, w);
++    }
++    Map<String, Message> reinstaters = new LinkedHashMap<>();
++    for (Message h : blocked) {
++      for (Association a : cues.associations()) {
++        if (a.message().equals(h)) {
++          String rho = "rho:" + pid + ":" + Terms.canonical(h) + ":" + a.cue();
++          if (!b.hasRule(rho)) {
++            b.defeasible(rho, via, contextCue(a.cue(), h));
++            b.superior(rho, decl.get(h));
++            reinstaters.put(rho, h);
++          }
++        }
++      }
++    }
++    Map<String, String> ruleDefs = new LinkedHashMap<>();
++    for (String r : rules) {
++      String wr = "wr:" + pid + ":" + r;
++      b.defeater(wr, via.complement(), lapsedRule(r));
++      b.superior(wr, base);
++      ruleDefs.put(r, wr);
++    }
++    String wp = "wp:" + pid;
++    b.defeater(wp, via.complement(), lapsedProc(pid));
++    b.superior(wp, base);
++    return new DerivationEntry(t, d, pid, Collections.unmodifiableSet(hyps),
++        Collections.unmodifiableSet(blocked), rules, via, base,
++        Collections.unmodifiableMap(decl), Collections.unmodifiableMap(ruleDefs), wp,
++        Collections.unmodifiableMap(reinstaters));
++  }
++
++  public static Literal known(Message x) {
++    return Literal.pos("Known(" + Terms.canonical(x) + ")");
++  }
++
++  public static Literal lapsedAtom(Message x) {
++    return Literal.pos("Lapsed(" + Terms.canonical(x) + ")");
++  }
++
++  public static Literal contextCue(String cue, Message x) {
++    return Literal.pos("ContextCue(" + cue + "," + Terms.canonical(x) + ")");
++  }
++
++  public static Literal lapsedRule(String r) {
++    return Literal.pos("LapsedRule(" + r + ")");
++  }
++
++  public static Literal lapsedProc(String p) {
++    return Literal.pos("LapsedProc(" + p + ")");
++  }
++}
+diff --git a/src/main/java/com/xmen/service/forget/dl/ForgetDlEngine.java b/src/main/java/com/xmen/service/forget/dl/ForgetDlEngine.java
+new file mode 100644
+index 0000000..51939ea
+--- /dev/null
++++ b/src/main/java/com/xmen/service/forget/dl/ForgetDlEngine.java
+@@ -0,0 +1,341 @@
++package com.xmen.service.forget.dl;
++
++import com.xmen.model.Derivation;
++import com.xmen.model.Message;
++import com.xmen.service.forget.dl.DefeasibleReasoner.Conclusions;
++import com.xmen.service.forget.dl.DefeasibleTheory.Literal;
++import com.xmen.service.forget.dl.ForgetDlCompiler.Compiled;
++import com.xmen.service.forget.dl.ForgetDlModel.Association;
++import com.xmen.service.forget.dl.ForgetDlModel.HumanState;
++import com.xmen.service.forget.dl.ForgetDlModel.LapseEvent;
++import com.xmen.service.forget.dl.ForgetDlModel.MessageLapse;
++import com.xmen.service.forget.dl.ForgetDlModel.ProceduralState;
++import com.xmen.service.forget.dl.ForgetDlModel.ProcedureLapse;
++import com.xmen.service.forget.dl.ForgetDlModel.RuleLapse;
++import com.xmen.service.forget.dl.ForgetDlModel.TransitionInput;
++import com.xmen.service.forget.dl.ForgetDlResult.Candidate;
++import com.xmen.service.forget.dl.ForgetDlResult.Decision;
++import com.xmen.service.forget.dl.ForgetDlResult.Status;
++import com.xmen.service.forget.dl.NormalDerivations.Coverage;
++import java.util.ArrayList;
++import java.util.LinkedHashMap;
++import java.util.LinkedHashSet;
++import java.util.List;
++import java.util.Map;
++import java.util.Optional;
++import java.util.Set;
++import java.util.TreeSet;
++
++/**
++ * Algorithm 2 (µ<sup>H</sup><sub>Forget−DL</sub>) of the paper, as a pure function from a
++ * {@link TransitionInput} to a {@link ForgetDlResult}. Deterministic: every iteration is over
++ * canonically sorted collections.
++ *
++ * <p>Implementation choices where the paper is silent are documented in
++ * {@code docs/forget-dl/SEMANTIC_CONTRACT.md} (A1–A12) and referenced inline.
++ */
++public final class ForgetDlEngine {
++
++  /** Engine limits. Exceeding any of them is reported as truncated coverage. */
++  public record Limits(NormalDerivations.Limits derivation, int maxCandidates) {
++    public static final Limits DEFAULT = new Limits(NormalDerivations.Limits.DEFAULT, 256);
++  }
++
++  private final DefeasibleReasoner reasoner;
++  private final NormalDerivations derivations;
++  private final Set<String> privateFunctions;
++  private final Limits limits;
++  private final ForgetDlCompiler compiler = new ForgetDlCompiler();
++
++  public ForgetDlEngine() {
++    this(new AmbiguityBlockingReasoner(), Set.of(), Limits.DEFAULT);
++  }
++
++  public ForgetDlEngine(DefeasibleReasoner reasoner, Set<String> privateFunctions, Limits limits) {
++    this.reasoner = reasoner;
++    this.privateFunctions = Set.copyOf(privateFunctions);
++    this.limits = limits;
++    this.derivations = new NormalDerivations(this.privateFunctions, limits.derivation());
++  }
++
++  public ForgetDlResult run(TransitionInput in) {
++    HumanState before = in.before();
++    Message m1 = in.received();
++    Message m2 = in.intendedSend();
++    List<String> notes = new ArrayList<>();
++
++    // ---- Input validation (explicit failures, never semantic decisions) ----
++    List<Message> toCheck = new ArrayList<>(before.knowledge());
++    toCheck.addAll(before.forget());
++    if (m1 != null) {
++      toCheck.add(m1);
++    }
++    if (m2 != null) {
++      toCheck.add(m2);
++    }
++    for (Message x : toCheck) {
++      Optional<String> bad = Terms.unsupportedConstruct(x);
++      if (bad.isPresent()) {
++        return ForgetDlResult.failure(Status.UNSUPPORTED, List.of(bad.get()), before);
++      }
++    }
++    for (LapseEvent e : in.lapses()) {
++      if (e instanceof MessageLapse ml && !ml.message().equals(m1)
++          && !before.knowledge().contains(ml.message())) {
++        return ForgetDlResult.failure(Status.INVALID_INPUT, List.of("lapsed message "
++            + Terms.canonical(ml.message()) + " is neither received nor in K^i (Def. 4)"), before);
++      }
++    }
++    for (Association a : in.cues().associations()) {
++      if (!in.cues().cues().contains(a.cue())) {
++        return ForgetDlResult.failure(Status.INVALID_INPUT,
++            List.of("association uses undeclared cue " + a.cue()), before);
++      }
++    }
++    if (!in.cues().cues().containsAll(in.cues().present())) {
++      return ForgetDlResult.failure(Status.INVALID_INPUT,
++          List.of("Pres is not a subset of Cue (Def. 8)"), before);
++    }
++
++    // ---- Lines 2-12: state update ----
++    Set<Message> k1 = new LinkedHashSet<>(before.knowledge());
++    if (m1 != null) {
++      k1.add(m1);
++    }
++    Set<Message> forget1 = new LinkedHashSet<>(before.forget());
++    Set<String> rules1 = new TreeSet<>(before.procedural().forgottenRules());
++    Set<String> procs1 = new TreeSet<>(before.procedural().forgottenProcedures());
++    boolean forgotReceived = false;
++    Set<Message> lapsedNow = new LinkedHashSet<>();
++    for (LapseEvent e : in.lapses()) {
++      switch (e) {
++        case MessageLapse ml -> {
++          if (ml.message().equals(m1)) {
++            forgotReceived = true; // line 4, first branch: K stays K^i
++          } else {
++            forget1.add(ml.message()); // line 4, else: knowledge keeps m1 (erratum E1)
++            lapsedNow.add(ml.message());
++          }
++        }
++        case RuleLapse rl -> rules1.add(rl.rule());
++        case ProcedureLapse pl -> procs1.add(pl.procedureId());
++      }
++    }
++    if (forgotReceived) {
++      k1 = new LinkedHashSet<>(before.knowledge());
++    }
++
++    // ---- Lines 5-6: Neglect with early return (A8: re-acquisition is not applied) ----
++    Set<Message> neglected = new LinkedHashSet<>();
++    for (LapseEvent e : in.lapses()) {
++      if (e instanceof MessageLapse ml) {
++        for (Message a : Terms.sorted(in.internalActionTerms())) {
++          if (Terms.occursIn(ml.message(), a)) {
++            neglected.add(ml.message());
++          }
++        }
++      }
++    }
++    if (!neglected.isEmpty()) {
++      HumanState after = new HumanState(k1, forget1, new ProceduralState(rules1, procs1));
++      return new ForgetDlResult(Status.OK, Decision.NEGLECT, List.copyOf(notes), after,
++          Set.of(), neglected, List.of(), List.of(), Coverage.COMPLETE, false, null, null,
++          List.of());
++    }
++
++    // ---- Line 13: re-acquisition (A6) and explicit procedural recovery ----
++    Set<Message> reacquired = new LinkedHashSet<>();
++    if (m1 != null && !forgotReceived) {
++      boolean changed = true;
++      while (changed) {
++        changed = false;
++        ForgetBlocking blocking = new ForgetBlocking(forget1, in.closure(), privateFunctions);
++        for (Message f : Terms.sorted(forget1)) {
++          if (lapsedNow.contains(f)) {
++            continue; // a lapse of this transition is not undone by the same receipt
++          }
++          if (f.equals(m1) || recoverableVia(f, m1, k1, blocking, notes)) {
++            forget1.remove(f);
++            reacquired.add(f);
++            changed = true;
++            break;
++          }
++        }
++      }
++    }
++    rules1.removeAll(in.relearnedRules());
++    procs1.removeAll(in.relearnedProcedures());
++    ProceduralState proc1 = new ProceduralState(rules1, procs1);
++    HumanState after = new HumanState(k1, forget1, proc1);
++
++    if (m2 == null) {
++      return new ForgetDlResult(Status.OK, Decision.NO_SEND, List.copyOf(notes), after,
++          reacquired, Set.of(), List.of(), List.of(), Coverage.COMPLETE, false, null, null,
++          List.of());
++    }
++    for (Association a : in.cues().associations()) {
++      if (!after.knowledge().contains(a.message())) {
++        return ForgetDlResult.failure(Status.INVALID_INPUT, List.of("association ("
++            + a.cue() + "," + Terms.canonical(a.message()) + ") outside K^{i+1} (Def. 8)"), after);
++      }
++    }
++
++    // ---- Lines 14-19: candidate targets ----
++    ForgetBlocking blocking = new ForgetBlocking(forget1, in.closure(), privateFunctions);
++    NormalDerivations.Result r2 = derivations.enumerate(m2, after.knowledge());
++    if (r2.coverage() == Coverage.UNSUPPORTED) {
++      return ForgetDlResult.failure(Status.UNSUPPORTED, List.of(r2.note()), after);
++    }
++    Coverage candidateCoverage = r2.coverage();
++    Map<Message, List<Map<Message, Message>>> provenance = new LinkedHashMap<>();
++    provenance.put(m2, new ArrayList<>());
++    List<Message> kSorted = Terms.sorted(after.knowledge());
++    outer:
++    for (Derivation pi : r2.derivations()) {
++      Set<Message> blocked = blocking.blocked(NormalDerivations.hypotheses(pi));
++      if (blocked.isEmpty()) {
++        continue;
++      }
++      List<Message> keys = new ArrayList<>(blocked);
++      List<List<Message>> sets = new ArrayList<>();
++      for (Message b : keys) {
++        List<Message> rb = replacementSet(b, kSorted, forget1, in.labels());
++        if (rb.isEmpty()) {
++          continue outer; // Algorithm 1 line 19-20: no replacement, next π
++        }
++        sets.add(rb);
++      }
++      for (Map<Message, Message> c : combinations(keys, sets)) {
++        Message variant = Terms.substitute(m2, c);
++        if (variant.equals(m2)) {
++          continue; // no blocked hypothesis occurs in m2: m2[C] = m2, already in T
++        }
++        if (!provenance.containsKey(variant) && provenance.size() >= limits.maxCandidates()) {
++          candidateCoverage = Coverage.TRUNCATED;
++          notes.add("candidate limit " + limits.maxCandidates() + " reached");
++          break outer;
++        }
++        List<Map<Message, Message>> prov = provenance.computeIfAbsent(variant, k -> new ArrayList<>());
++        if (!prov.contains(c)) {
++          prov.add(Map.copyOf(c));
++        }
++      }
++    }
++
++    // ---- Π_t for every t ∈ T ----
++    Map<Message, List<Derivation>> byTarget = new LinkedHashMap<>();
++    Map<Message, Coverage> coverage = new LinkedHashMap<>();
++    for (Message t : provenance.keySet()) {
++      NormalDerivations.Result rt = t.equals(m2) ? r2 : derivations.enumerate(t, after.knowledge());
++      if (rt.coverage() == Coverage.UNSUPPORTED) {
++        return ForgetDlResult.failure(Status.UNSUPPORTED, List.of(rt.note()), after);
++      }
++      byTarget.put(t, rt.derivations());
++      coverage.put(t, rt.coverage());
++      if (rt.coverage() == Coverage.TRUNCATED) {
++        notes.add("derivation enumeration truncated for " + Terms.canonical(t));
++      }
++    }
++
++    // ---- Lines 20-21: one theory for all candidates ----
++    Compiled compiled = compiler.compile(after.knowledge(), blocking, proc1, in.cues(), byTarget);
++    Conclusions conc = reasoner.reason(compiled.theory());
++
++    List<Candidate> candidates = new ArrayList<>();
++    for (Message t : provenance.keySet()) {
++      candidates.add(new Candidate(t, t.equals(m2), List.copyOf(provenance.get(t)),
++          coverage.get(t), conc.partialTag(compiled.usable().get(t))));
++    }
++
++    // ---- Lines 22-31: decision ----
++    Literal u2 = compiled.usable().get(m2);
++    Decision decision;
++    List<Candidate> replacements = new ArrayList<>();
++    boolean partial = false;
++    if (conc.provable(u2)) {
++      decision = Decision.PRESERVE;
++    } else if (!conc.refuted(u2)) {
++      decision = Decision.UNDECIDED_LOGIC;
++    } else if (coverage.get(m2) != Coverage.COMPLETE) {
++      decision = Decision.UNKNOWN_COVERAGE;
++    } else {
++      boolean allConclusive = candidateCoverage == Coverage.COMPLETE;
++      for (Candidate c : candidates) {
++        if (c.intended()) {
++          continue;
++        }
++        Literal u = compiled.usable().get(c.target());
++        if (conc.provable(u)) {
++          replacements.add(c);
++        } else if (!conc.refuted(u) || c.derivationCoverage() != Coverage.COMPLETE) {
++          allConclusive = false;
++        }
++      }
++      if (!replacements.isEmpty()) {
++        decision = Decision.REPLACE;
++        partial = !allConclusive;
++      } else {
++        decision = allConclusive ? Decision.SKIP : Decision.UNKNOWN_COVERAGE;
++      }
++    }
++    return new ForgetDlResult(Status.OK, decision, List.copyOf(notes), after, reacquired,
++        Set.of(), List.copyOf(candidates), List.copyOf(replacements), candidateCoverage, partial,
++        compiled, conc, ForgetDlResult.buildTrace(compiled, conc, m2));
++  }
++
++  /**
++   * R<sub>m̄</sub> (Algorithm 2, line 17): known, not syntactically forgotten, same format, same
++   * (known) label, and different from m̄ itself (A5).
++   */
++  private static List<Message> replacementSet(Message b, List<Message> kSorted,
++      Set<Message> forget, Map<Message, String> labels) {
++    String label = labels.get(b);
++    List<Message> out = new ArrayList<>();
++    if (label == null) {
++      return out; // A4: without a label, no type-safe replacement exists
++    }
++    String format = Terms.format(b);
++    for (Message x : kSorted) {
++      if (!x.equals(b) && !forget.contains(x) && format.equals(Terms.format(x))
++          && label.equals(labels.get(x))) {
++        out.add(x);
++      }
++    }
++    return out;
++  }
++
++  private static List<Map<Message, Message>> combinations(List<Message> keys,
++      List<List<Message>> sets) {
++    List<Map<Message, Message>> out = new ArrayList<>();
++    out.add(new LinkedHashMap<>());
++    for (int i = 0; i < keys.size(); i++) {
++      List<Map<Message, Message>> next = new ArrayList<>();
++      for (Map<Message, Message> partial : out) {
++        for (Message choice : sets.get(i)) {
++          Map<Message, Message> m = new LinkedHashMap<>(partial);
++          m.put(keys.get(i), choice);
++          next.add(m);
++        }
++      }
++      out = next;
++    }
++    return out;
++  }
++
++  /** A6: f is re-acquired if some derivation of f uses the received m1 and nothing blocked. */
++  private boolean recoverableVia(Message f, Message m1, Set<Message> k1, ForgetBlocking blocking,
++      List<String> notes) {
++    NormalDerivations.Result r = derivations.enumerate(f, k1);
++    for (Derivation d : r.derivations()) {
++      Set<Message> hyps = NormalDerivations.hypotheses(d);
++      if (hyps.contains(m1) && blocking.blocked(hyps).isEmpty()) {
++        return true;
++      }
++    }
++    if (r.coverage() != Coverage.COMPLETE) {
++      notes.add("re-acquisition check for " + Terms.canonical(f) + " incomplete ("
++          + r.coverage() + "); kept forgotten");
++    }
++    return false;
++  }
++}
+diff --git a/src/main/java/com/xmen/service/forget/dl/ForgetDlModel.java b/src/main/java/com/xmen/service/forget/dl/ForgetDlModel.java
+new file mode 100644
+index 0000000..5c9f399
+--- /dev/null
++++ b/src/main/java/com/xmen/service/forget/dl/ForgetDlModel.java
+@@ -0,0 +1,213 @@
++package com.xmen.service.forget.dl;
++
++import com.xmen.model.Message;
++import com.xmen.service.forget.ForgetContext.BlockingMode;
++import java.util.ArrayList;
++import java.util.Collections;
++import java.util.LinkedHashMap;
++import java.util.LinkedHashSet;
++import java.util.List;
++import java.util.Map;
++import java.util.Objects;
++import java.util.Set;
++import java.util.TreeSet;
++
++/** Typed inputs and state of the defeasible Forget mutation (paper Sections 4, 7.5, 7.6, 7.7). */
++public final class ForgetDlModel {
++
++  private ForgetDlModel() {}
++
++  /**
++   * PForget<sub>H</sub> = (R<sub>H</sub>, &#928;<sub>H</sub>): forgotten inference-rule labels and
++   * forgotten whole procedures (derivation identifiers, see {@link NormalDerivations#procedureId}).
++   * A typed pair, so a rule label can never be confused with a procedure identifier.
++   */
++  public record ProceduralState(Set<String> forgottenRules, Set<String> forgottenProcedures) {
++    public static final ProceduralState EMPTY = new ProceduralState(Set.of(), Set.of());
++
++    public ProceduralState {
++      forgottenRules = Collections.unmodifiableSet(new TreeSet<>(forgottenRules));
++      forgottenProcedures = Collections.unmodifiableSet(new TreeSet<>(forgottenProcedures));
++    }
++  }
++
++  /** (c, m̄) ∈ Assoc: perceiving cue c can trigger retrieval of m̄. */
++  public record Association(String cue, Message message) {
++    public Association {
++      Objects.requireNonNull(cue, "cue");
++      Objects.requireNonNull(message, "message");
++    }
++  }
++
++  /**
++   * Definition 8: C<sub>H</sub> = (Cue, Assoc, Pres). Cue identifiers are not messages. Presence
++   * and association are recorded separately: an ineffective cue is either absent from Pres or
++   * absent from Assoc.
++   */
++  public record CueModel(Set<String> cues, Set<Association> associations, Set<String> present) {
++    public static final CueModel NONE = new CueModel(Set.of(), Set.of(), Set.of());
++
++    public CueModel {
++      cues = Collections.unmodifiableSet(new TreeSet<>(cues));
++      associations = Collections.unmodifiableSet(new LinkedHashSet<>(associations));
++      present = Collections.unmodifiableSet(new TreeSet<>(present));
++    }
++  }
++
++  /** Persistent per-agent state carried between transitions. */
++  public record HumanState(Set<Message> knowledge, Set<Message> forget,
++      ProceduralState procedural) {
++    public HumanState {
++      knowledge = Collections.unmodifiableSet(new LinkedHashSet<>(Terms.sorted(knowledge)));
++      forget = Collections.unmodifiableSet(new LinkedHashSet<>(Terms.sorted(forget)));
++      Objects.requireNonNull(procedural, "procedural");
++    }
++
++    public static HumanState of(Set<Message> knowledge) {
++      return new HumanState(knowledge, Set.of(), ProceduralState.EMPTY);
++    }
++  }
++
++  /** The lapse event ℓ of Algorithm 2. */
++  public sealed interface LapseEvent permits MessageLapse, RuleLapse, ProcedureLapse {}
++
++  /** Declarative lapse of a message (just received, or already known). */
++  public record MessageLapse(Message message) implements LapseEvent {
++    public MessageLapse {
++      Objects.requireNonNull(message, "message");
++    }
++  }
++
++  /** Loss of an inference competence (rule label, e.g. {@code sdec}, {@code sign}). */
++  public record RuleLapse(String rule) implements LapseEvent {
++    public RuleLapse {
++      Objects.requireNonNull(rule, "rule");
++    }
++  }
++
++  /** Loss of one whole derivation procedure (identifier from {@link NormalDerivations}). */
++  public record ProcedureLapse(String procedureId) implements LapseEvent {
++    public ProcedureLapse {
++      Objects.requireNonNull(procedureId, "procedureId");
++    }
++  }
++
++  /**
++   * Input of one application of Algorithm 2 at transition i of agent H.
++   *
++   * @param before state at i (K<sup>i</sup>, Forget<sup>i</sup>, PForget<sup>i</sup>)
++   * @param received m<sub>1</sub> (may be null if the transition receives nothing)
++   * @param lapses lapse events at this transition (usually one; empty = decision only)
++   * @param intendedSend m<sub>2</sub> (may be null if the transition sends nothing)
++   * @param internalActionTerms terms used by the transition's explicit internal actions a
++   * @param cues cue model at i+1
++   * @param closure Case 1, 2 or 3 of Definition 5
++   * @param labels label of each message ("constant-value" labels of Section 3.3)
++   * @param relearnedRules explicit procedural recovery of rule competences at this transition
++   * @param relearnedProcedures explicit procedural recovery of whole procedures
++   */
++  public record TransitionInput(
++      HumanState before,
++      Message received,
++      List<LapseEvent> lapses,
++      Message intendedSend,
++      Set<Message> internalActionTerms,
++      CueModel cues,
++      BlockingMode closure,
++      Map<Message, String> labels,
++      Set<String> relearnedRules,
++      Set<String> relearnedProcedures) {
++
++    public TransitionInput {
++      Objects.requireNonNull(before, "before");
++      lapses = List.copyOf(lapses);
++      internalActionTerms = Set.copyOf(internalActionTerms);
++      Objects.requireNonNull(cues, "cues");
++      Objects.requireNonNull(closure, "closure");
++      labels = Collections.unmodifiableMap(new LinkedHashMap<>(labels));
++      relearnedRules = Set.copyOf(relearnedRules);
++      relearnedProcedures = Set.copyOf(relearnedProcedures);
++    }
++
++    public static Builder builder(HumanState before) {
++      return new Builder(before);
++    }
++
++    /** Fluent builder with paper defaults (Case 1, no cues, no procedural recovery). */
++    public static final class Builder {
++      private final HumanState before;
++      private Message received;
++      private final List<LapseEvent> lapses = new ArrayList<>();
++      private Message intendedSend;
++      private final Set<Message> internalActionTerms = new LinkedHashSet<>();
++      private CueModel cues = CueModel.NONE;
++      private BlockingMode closure = BlockingMode.CASE1_WEAK;
++      private final Map<Message, String> labels = new LinkedHashMap<>();
++      private final Set<String> relearnedRules = new LinkedHashSet<>();
++      private final Set<String> relearnedProcedures = new LinkedHashSet<>();
++
++      private Builder(HumanState before) {
++        this.before = before;
++      }
++
++      public Builder received(Message m1) {
++        this.received = m1;
++        return this;
++      }
++
++      public Builder lapse(LapseEvent e) {
++        lapses.add(e);
++        return this;
++      }
++
++      public Builder forget(Message m) {
++        return lapse(new MessageLapse(m));
++      }
++
++      public Builder send(Message m2) {
++        this.intendedSend = m2;
++        return this;
++      }
++
++      public Builder internalAction(Message term) {
++        internalActionTerms.add(term);
++        return this;
++      }
++
++      public Builder cues(CueModel c) {
++        this.cues = c;
++        return this;
++      }
++
++      public Builder closure(BlockingMode mode) {
++        this.closure = mode;
++        return this;
++      }
++
++      public Builder label(Message m, String label) {
++        labels.put(m, label);
++        return this;
++      }
++
++      public Builder labels(Map<Message, String> ls) {
++        labels.putAll(ls);
++        return this;
++      }
++
++      public Builder relearnRule(String r) {
++        relearnedRules.add(r);
++        return this;
++      }
++
++      public Builder relearnProcedure(String p) {
++        relearnedProcedures.add(p);
++        return this;
++      }
++
++      public TransitionInput build() {
++        return new TransitionInput(before, received, lapses, intendedSend, internalActionTerms,
++            cues, closure, labels, relearnedRules, relearnedProcedures);
++      }
++    }
++  }
++}
+diff --git a/src/main/java/com/xmen/service/forget/dl/ForgetDlResult.java b/src/main/java/com/xmen/service/forget/dl/ForgetDlResult.java
+new file mode 100644
+index 0000000..5c5eb0d
+--- /dev/null
++++ b/src/main/java/com/xmen/service/forget/dl/ForgetDlResult.java
+@@ -0,0 +1,204 @@
++package com.xmen.service.forget.dl;
++
++import com.xmen.model.Message;
++import com.xmen.service.forget.dl.DefeasibleReasoner.Conclusions;
++import com.xmen.service.forget.dl.DefeasibleTheory.Literal;
++import com.xmen.service.forget.dl.DefeasibleTheory.Rule;
++import com.xmen.service.forget.dl.ForgetDlCompiler.Compiled;
++import com.xmen.service.forget.dl.ForgetDlCompiler.DerivationEntry;
++import com.xmen.service.forget.dl.ForgetDlModel.HumanState;
++import com.xmen.service.forget.dl.NormalDerivations.Coverage;
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++
++/** Outcome of one application of Algorithm 2, with its cognitive trace (Section 7.4). */
++public record ForgetDlResult(
++    Status status,
++    Decision decision,
++    List<String> notes,
++    HumanState after,
++    Set<Message> reacquired,
++    Set<Message> neglected,
++    List<Candidate> candidates,
++    List<Candidate> replacements,
++    Coverage candidateCoverage,
++    boolean partial,
++    Compiled compiled,
++    Conclusions conclusions,
++    List<TargetTrace> trace) {
++
++  /** Processing status; anything but OK carries no semantic decision. */
++  public enum Status {
++    OK,
++    INVALID_INPUT,
++    UNSUPPORTED
++  }
++
++  /** Algorithm 2 outcome, plus explicit non-decisions. */
++  public enum Decision {
++    /** +∂Usable(m2): the intended send is kept (line 23). */
++    PRESERVE,
++    /** −∂Usable(m2) and V ≠ ∅: one Replace per usable variant (lines 25-28). */
++    REPLACE,
++    /** −∂Usable(m2), V = ∅, complete coverage (line 30). */
++    SKIP,
++    /** A lapsed message is used in an internal action (lines 5-6). */
++    NEGLECT,
++    /** The transition has no send; only the state update applies. */
++    NO_SEND,
++    /** Negative evidence rests on a truncated enumeration: no Replace/Skip claim. */
++    UNKNOWN_COVERAGE,
++    /** The theory leaves Usable(m2) without a defeasible tag. */
++    UNDECIDED_LOGIC,
++    /** No decision (invalid input or unsupported algebra). */
++    NONE
++  }
++
++  /** A target in T with the syntactic substitutions C that produced it. */
++  public record Candidate(
++      Message target,
++      boolean intended,
++      List<Map<Message, Message>> substitutions,
++      Coverage derivationCoverage,
++      String usableTag) {}
++
++  public enum BlockerKind {
++    DECLARATIVE,
++    RULE,
++    PROCEDURE
++  }
++
++  /** An applicable opposing defeater and the applicable supporting rules superior to it. */
++  public record Blocker(BlockerKind kind, String label, String subject, List<String> overruledBy) {
++    public boolean standing() {
++      return overruledBy.isEmpty();
++    }
++  }
++
++  /** Trace of one derivation π: its Via tag, applicable support and blockers. */
++  public record DerivationTrace(
++      String procedureId,
++      String viaTag,
++      Set<Message> hypotheses,
++      Set<Message> blockedHypotheses,
++      Set<String> rules,
++      List<String> applicableSupport,
++      List<Blocker> blockers) {
++
++    public List<Blocker> standing() {
++      return blockers.stream().filter(Blocker::standing).toList();
++    }
++  }
++
++  /** Trace of one target: Usable tag and per-derivation explanation. */
++  public record TargetTrace(Message target, boolean intended, String usableTag,
++      List<DerivationTrace> derivations) {
++
++    public boolean noDerivation() {
++      return derivations.isEmpty();
++    }
++  }
++
++  static ForgetDlResult failure(Status s, List<String> notes, HumanState after) {
++    return new ForgetDlResult(s, Decision.NONE, List.copyOf(notes), after, Set.of(), Set.of(),
++        List.of(), List.of(), Coverage.COMPLETE, false, null, null, List.of());
++  }
++
++  /** Builds the cognitive trace from the compiled theory and its tagged conclusions. */
++  static List<TargetTrace> buildTrace(Compiled compiled, Conclusions c, Message intended) {
++    List<TargetTrace> out = new ArrayList<>();
++    for (Map.Entry<Message, List<DerivationEntry>> e : compiled.entries().entrySet()) {
++      Message t = e.getKey();
++      List<DerivationTrace> ds = new ArrayList<>();
++      for (DerivationEntry d : e.getValue()) {
++        List<String> support = new ArrayList<>();
++        List<Rule> supportRules = new ArrayList<>();
++        Rule base = compiled.theory().rule(d.baseLabel());
++        if (applicable(base, c)) {
++          support.add(base.label());
++          supportRules.add(base);
++        }
++        for (String rho : d.reinstaters().keySet()) {
++          Rule r = compiled.theory().rule(rho);
++          if (applicable(r, c)) {
++            support.add(rho);
++            supportRules.add(r);
++          }
++        }
++        List<Blocker> blockers = new ArrayList<>();
++        d.declarativeDefeaters().forEach((h, label) ->
++            addBlocker(blockers, compiled, c, supportRules, BlockerKind.DECLARATIVE, label,
++                Terms.canonical(h)));
++        d.ruleDefeaters().forEach((r, label) ->
++            addBlocker(blockers, compiled, c, supportRules, BlockerKind.RULE, label, r));
++        addBlocker(blockers, compiled, c, supportRules, BlockerKind.PROCEDURE,
++            d.procedureDefeater(), d.procedureId());
++        ds.add(new DerivationTrace(d.procedureId(), c.partialTag(d.via()), d.hypotheses(),
++            d.blockedHypotheses(), d.rules(), List.copyOf(support), List.copyOf(blockers)));
++      }
++      out.add(new TargetTrace(t, t.equals(intended),
++          c.partialTag(compiled.usable().get(t)), List.copyOf(ds)));
++    }
++    return List.copyOf(out);
++  }
++
++  private static void addBlocker(List<Blocker> out, Compiled compiled, Conclusions c,
++      List<Rule> support, BlockerKind kind, String label, String subject) {
++    Rule s = compiled.theory().rule(label);
++    if (!applicable(s, c)) {
++      return;
++    }
++    List<String> by = support.stream()
++        .filter(t -> compiled.theory().isSuperior(t.label(), s.label()))
++        .map(Rule::label)
++        .toList();
++    out.add(new Blocker(kind, label, subject, by));
++  }
++
++  private static boolean applicable(Rule r, Conclusions c) {
++    for (Literal l : r.body()) {
++      if (!c.provable(l)) {
++        return false;
++      }
++    }
++    return true;
++  }
++
++  /** Readable explanation of the decision and of every target's tag. */
++  public String explain() {
++    StringBuilder sb = new StringBuilder();
++    sb.append("status=").append(status).append(" decision=").append(decision);
++    if (partial) {
++      sb.append(" (partial: candidate set not exhaustive)");
++    }
++    sb.append('\n');
++    for (String n : notes) {
++      sb.append("note: ").append(n).append('\n');
++    }
++    for (TargetTrace t : trace) {
++      sb.append(t.intended() ? "intended " : "variant  ").append(Terms.canonical(t.target()))
++          .append(": ").append(t.usableTag()).append("Usable");
++      if (t.noDerivation()) {
++        sb.append(" — no normal derivation (Π = ∅)");
++      }
++      sb.append('\n');
++      for (DerivationTrace d : t.derivations()) {
++        sb.append("  ").append(d.procedureId()).append(' ').append(d.viaTag()).append("Via")
++            .append(" rules=").append(d.rules()).append(" support=").append(d.applicableSupport())
++            .append('\n');
++        for (Blocker b : d.blockers()) {
++          sb.append("    ").append(b.standing() ? "standing " : "overruled ")
++              .append(b.kind()).append(' ').append(b.subject()).append(" [").append(b.label())
++              .append(']');
++          if (!b.standing()) {
++            sb.append(" by ").append(b.overruledBy());
++          }
++          sb.append('\n');
++        }
++      }
++    }
++    return sb.toString();
++  }
++}
+diff --git a/src/main/java/com/xmen/service/forget/dl/NormalDerivations.java b/src/main/java/com/xmen/service/forget/dl/NormalDerivations.java
+new file mode 100644
+index 0000000..75513ae
+--- /dev/null
++++ b/src/main/java/com/xmen/service/forget/dl/NormalDerivations.java
+@@ -0,0 +1,301 @@
++package com.xmen.service.forget.dl;
++
++import com.xmen.model.Derivation;
++import com.xmen.model.Message;
++import com.xmen.model.Pair;
++import java.nio.charset.StandardCharsets;
++import java.security.MessageDigest;
++import java.security.NoSuchAlgorithmException;
++import java.util.ArrayList;
++import java.util.Comparator;
++import java.util.HashMap;
++import java.util.HashSet;
++import java.util.HexFormat;
++import java.util.LinkedHashSet;
++import java.util.List;
++import java.util.Map;
++import java.util.Optional;
++import java.util.Set;
++import java.util.TreeSet;
++
++/**
++ * Enumerates &#928;<sub>m</sub>: the normal derivations of a target from a finite knowledge set
++ * (paper Section 3.2), as {@link Derivation} trees using the X-Men conventions ("Initial" leaves).
++ *
++ * <p>Inference rules (labels used by procedural forgetting, Definition 7):
++ *
++ * <ul>
++ *   <li>composition: {@code pair}, {@code senc}, {@code aenc}, and every other public constructor
++ *       under its own symbol (e.g. {@code sign}, {@code h}, {@code pk}, user functions);
++ *   <li>decomposition: {@code proj} (pair decomposition, i ∈ {1,2}), {@code sdec} (premises:
++ *       ciphertext, key), {@code adec} (premises: ciphertext {@code aenc(m,pk(sk))}, sk).
++ * </ul>
++ *
++ * <p>Normality: a decomposition is never applied to the output of its inverse composition. In
++ * addition, no term is repeated on a root-to-leaf branch (assumption A3); this subsumes the
++ * "nor vice versa" cases and makes &#928;<sub>m</sub> finite, because every term of such a
++ * derivation is a subterm of K ∪ {m}. Decryption nodes always carry both the ciphertext and the
++ * key premise, so both are hypotheses when they are leaves.
++ *
++ * <p>Coverage is explicit: exceeding a limit yields {@link Coverage#TRUNCATED}, never a silently
++ * shortened "complete" set.
++ */
++public final class NormalDerivations {
++
++  public static final String INITIAL = "Initial";
++
++  public enum Coverage {
++    COMPLETE,
++    TRUNCATED,
++    UNSUPPORTED
++  }
++
++  /** Enumeration limits; reaching either one marks the result as truncated. */
++  public record Limits(int maxDerivationsPerGoal, int maxSteps) {
++    public static final Limits DEFAULT = new Limits(512, 250_000);
++  }
++
++  /** Result for one target. {@code derivations} is sorted and duplicate-free. */
++  public record Result(Message target, List<Derivation> derivations, Coverage coverage,
++      String note) {
++    public Result {
++      derivations = List.copyOf(derivations);
++    }
++  }
++
++  private final Set<String> privateFunctions;
++  private final Limits limits;
++
++  public NormalDerivations() {
++    this(Set.of(), Limits.DEFAULT);
++  }
++
++  public NormalDerivations(Set<String> privateFunctions, Limits limits) {
++    this.privateFunctions = Set.copyOf(privateFunctions);
++    this.limits = limits;
++  }
++
++  public Result enumerate(Message target, Set<Message> knowledge) {
++    Optional<String> bad = Terms.unsupportedConstruct(target);
++    if (bad.isEmpty()) {
++      for (Message k : Terms.sorted(knowledge)) {
++        bad = Terms.unsupportedConstruct(k);
++        if (bad.isPresent()) {
++          break;
++        }
++      }
++    }
++    if (bad.isPresent()) {
++      return new Result(target, List.of(), Coverage.UNSUPPORTED, bad.get());
++    }
++    Run run = new Run(knowledge);
++    List<Derivation> found = run.derive(target, new HashSet<>());
++    List<Derivation> sorted = new ArrayList<>(new LinkedHashSet<>(found));
++    sorted.sort(Comparator.comparing(NormalDerivations::canonicalTree));
++    return new Result(target, sorted,
++        run.truncated ? Coverage.TRUNCATED : Coverage.COMPLETE,
++        run.truncated ? "limit reached: " + limits : "");
++  }
++
++  /** Hyp<sub>π</sub>: the knowledge leaves of a derivation. */
++  public static Set<Message> hypotheses(Derivation d) {
++    Set<Message> out = new LinkedHashSet<>();
++    collectHyps(d, out);
++    return out;
++  }
++
++  private static void collectHyps(Derivation d, Set<Message> out) {
++    if (INITIAL.equals(d.getRule())) {
++      out.add(d.getGoal());
++      return;
++    }
++    for (Derivation p : d.getPremises()) {
++      collectHyps(p, out);
++    }
++  }
++
++  /** Rules(π): the distinct inference-rule labels used by a derivation (Definition 7). */
++  public static Set<String> rules(Derivation d) {
++    Set<String> out = new TreeSet<>();
++    collectRules(d, out);
++    return out;
++  }
++
++  private static void collectRules(Derivation d, Set<String> out) {
++    if (!INITIAL.equals(d.getRule())) {
++      out.add(d.getRule());
++    }
++    for (Derivation p : d.getPremises()) {
++      collectRules(p, out);
++    }
++  }
++
++  /** Canonical tree rendering: identical trees have identical strings at every state. */
++  public static String canonicalTree(Derivation d) {
++    StringBuilder sb = new StringBuilder();
++    appendTree(d, sb);
++    return sb.toString();
++  }
++
++  private static void appendTree(Derivation d, StringBuilder sb) {
++    sb.append(d.getRule()).append('[').append(Terms.canonical(d.getGoal())).append(']');
++    if (!d.getPremises().isEmpty()) {
++      sb.append('(');
++      for (int i = 0; i < d.getPremises().size(); i++) {
++        if (i > 0) {
++          sb.append(';');
++        }
++        appendTree(d.getPremises().get(i), sb);
++      }
++      sb.append(')');
++    }
++  }
++
++  /**
++   * Stable procedure identifier of a derivation tree (Definition 7): independent of display
++   * labels, state, context revision and enumeration order.
++   */
++  public static String procedureId(Derivation d) {
++    try {
++      byte[] h = MessageDigest.getInstance("SHA-256")
++          .digest(canonicalTree(d).getBytes(StandardCharsets.UTF_8));
++      return "pi_" + HexFormat.of().formatHex(h, 0, 8);
++    } catch (NoSuchAlgorithmException e) {
++      throw new IllegalStateException("SHA-256 unavailable", e);
++    }
++  }
++
++  /** Human-readable multi-line rendering of a derivation tree. */
++  public static String render(Derivation d) {
++    StringBuilder sb = new StringBuilder();
++    render(d, 0, sb);
++    return sb.toString();
++  }
++
++  private static void render(Derivation d, int depth, StringBuilder sb) {
++    sb.append("  ".repeat(depth)).append(d.getRule()).append(" ⇒ ")
++        .append(Terms.canonical(d.getGoal())).append('\n');
++    for (Derivation p : d.getPremises()) {
++      render(p, depth + 1, sb);
++    }
++  }
++
++  /** One enumeration run over a fixed knowledge set. */
++  private final class Run {
++    private final Set<Message> knowledge;
++    private final Map<Message, List<Message>> pairsContaining = new HashMap<>();
++    private final Map<Message, List<Terms.Cipher>> ciphersOf = new HashMap<>();
++    private int steps;
++    private boolean truncated;
++
++    Run(Set<Message> knowledge) {
++      this.knowledge = Set.copyOf(knowledge);
++      for (Message s : Terms.sorted(Terms.subterms(knowledge))) {
++        if (s instanceof Pair p) {
++          pairsContaining.computeIfAbsent(p.getLeft(), k -> new ArrayList<>()).add(p);
++          if (!p.getRight().equals(p.getLeft())) {
++            pairsContaining.computeIfAbsent(p.getRight(), k -> new ArrayList<>()).add(p);
++          }
++        }
++        Terms.symmetric(s).ifPresent(
++            c -> ciphersOf.computeIfAbsent(c.plaintext(), k -> new ArrayList<>()).add(c));
++        Terms.asymmetric(s).ifPresent(
++            c -> ciphersOf.computeIfAbsent(c.plaintext(), k -> new ArrayList<>()).add(c));
++      }
++    }
++
++    private boolean full(List<Derivation> out) {
++      if (out.size() >= limits.maxDerivationsPerGoal()) {
++        truncated = true;
++        return true;
++      }
++      return false;
++    }
++
++    List<Derivation> derive(Message goal, Set<Message> branch) {
++      List<Derivation> out = new ArrayList<>();
++      if (branch.contains(goal)) {
++        return out;
++      }
++      if (++steps > limits.maxSteps()) {
++        truncated = true;
++        return out;
++      }
++      Set<Message> next = new HashSet<>(branch);
++      next.add(goal);
++
++      // Hypothesis (leaf).
++      if (knowledge.contains(goal)) {
++        out.add(new Derivation(goal, INITIAL, List.of()));
++      }
++
++      // Composition.
++      Optional<String> ctor = Terms.constructorLabel(goal, privateFunctions);
++      if (ctor.isPresent()) {
++        List<List<Derivation>> options = new ArrayList<>();
++        for (Message a : Terms.args(goal)) {
++          List<Derivation> ds = derive(a, next);
++          if (ds.isEmpty()) {
++            options = null;
++            break;
++          }
++          options.add(ds);
++        }
++        if (options != null) {
++          product(goal, ctor.get(), options, 0, new ArrayList<>(), out);
++        }
++      }
++
++      // Pair decomposition: main premise must not come from pair composition.
++      for (Message p : pairsContaining.getOrDefault(goal, List.of())) {
++        for (Derivation dp : derive(p, next)) {
++          if (full(out)) {
++            return out;
++          }
++          if (!"pair".equals(dp.getRule())) {
++            out.add(new Derivation(goal, "proj", List.of(dp)));
++          }
++        }
++      }
++
++      // Decryption: ciphertext must not come from the matching encryption.
++      for (Terms.Cipher c : ciphersOf.getOrDefault(goal, List.of())) {
++        List<Derivation> cipherDs = derive(c.ciphertext(), next);
++        if (cipherDs.isEmpty()) {
++          continue;
++        }
++        List<Derivation> keyDs = derive(c.decryptionKey(), next);
++        for (Derivation dc : cipherDs) {
++          if (c.encryptLabel().equals(dc.getRule())) {
++            continue;
++          }
++          for (Derivation dk : keyDs) {
++            if (full(out)) {
++              return out;
++            }
++            out.add(new Derivation(goal, c.decryptLabel(), List.of(dc, dk)));
++          }
++        }
++      }
++      return out;
++    }
++
++    private void product(Message goal, String label, List<List<Derivation>> options, int i,
++        List<Derivation> acc, List<Derivation> out) {
++      if (i == options.size()) {
++        if (!full(out)) {
++          out.add(new Derivation(goal, label, List.copyOf(acc)));
++        }
++        return;
++      }
++      for (Derivation d : options.get(i)) {
++        if (truncated && out.size() >= limits.maxDerivationsPerGoal()) {
++          return;
++        }
++        acc.add(d);
++        product(goal, label, options, i + 1, acc, out);
++        acc.remove(acc.size() - 1);
++      }
++    }
++  }
++}
+diff --git a/src/main/java/com/xmen/service/forget/dl/README.md b/src/main/java/com/xmen/service/forget/dl/README.md
+new file mode 100644
+index 0000000..535e2be
+--- /dev/null
++++ b/src/main/java/com/xmen/service/forget/dl/README.md
+@@ -0,0 +1,19 @@
++# `service/forget/dl` — Forget under Defeasible Logic (paper §7, Algorithm 2)
++
++Pure-Java core (no Spring, no Lombok). Entry points: `ForgetDlEngine.run(TransitionInput)` and,
++for the host, `ForgetDlBridge.decide(...)`.
++
++| File | Role |
++|---|---|
++| `Terms` | message algebra helpers: canonical form, subterms, format, substitution, cipher views |
++| `NormalDerivations` | Π_m with explicit coverage; Hyp_π, Rules(π), stable procedure ids |
++| `ForgetBlocking` | Blocked(Hyp, Forget), Cases 1–3 |
++| `DefeasibleTheory`, `DefeasibleReasoner`, `AmbiguityBlockingReasoner` | DL(∂) theories and proof tags |
++| `ForgetDlCompiler` | compile(H, i+1, T, K): facts, d_π, use_π, defeaters, reinstaters, superiority |
++| `ForgetDlModel` | typed state: K, Forget, PForget, cue model, lapse events |
++| `ForgetDlEngine` | Algorithm 2: state update, re-acquisition, candidates, decision with coverage |
++| `ForgetDlResult` | decision, candidates, cognitive trace, `explain()` |
++| `ForgetDlBridge` | host representation (tildes, public constants, labels) |
++
++Enable in the host with the request header `Forget-Semantics: DL` (default `ALGORITHM1`).
++Semantics and limitations: `docs/forget-dl/`.
+diff --git a/src/main/java/com/xmen/service/forget/dl/Terms.java b/src/main/java/com/xmen/service/forget/dl/Terms.java
+new file mode 100644
+index 0000000..61e4749
+--- /dev/null
++++ b/src/main/java/com/xmen/service/forget/dl/Terms.java
+@@ -0,0 +1,230 @@
++package com.xmen.service.forget.dl;
++
++import com.xmen.model.Atom;
++import com.xmen.model.Encrypt;
++import com.xmen.model.Message;
++import com.xmen.model.Pair;
++import com.xmen.model.PredictiveFunction;
++import java.util.ArrayList;
++import java.util.Comparator;
++import java.util.LinkedHashSet;
++import java.util.List;
++import java.util.Map;
++import java.util.Optional;
++import java.util.Set;
++
++/**
++ * Message-algebra helpers (paper Section 3.1) over the existing X-Men {@link Message} model.
++ *
++ * <p>Supported fragment: atoms, pairs, symmetric encryption ({@code senc/2}, and the legacy
++ * {@link Encrypt} term), asymmetric encryption {@code aenc(m, pk(sk))}, and any other public
++ * free constructor (e.g. {@code sign/2}, {@code h/1}, {@code pk/1}, user-defined functions).
++ * Function symbols with equational theories (XOR, Diffie-Hellman, bilinear pairing) and
++ * destructor symbols occurring inside terms are reported as unsupported.
++ */
++public final class Terms {
++
++  /** Format of atomic messages (see assumption A2 in the semantic contract). */
++  public static final String ATOM_FORMAT = "atom";
++
++  private static final Set<String> DESTRUCTOR_SYMBOLS =
++      Set.of("fst", "snd", "sdec", "adec", "verify", "getmessage", "revealverify");
++
++  private static final Set<String> EQUATIONAL_SYMBOLS =
++      Set.of("xor", "^", "*", "inv", "pmult", "em", "exp", "mult", "++", "diff");
++
++  private Terms() {}
++
++  /** Deterministic structural rendering used for ordering, atom names and procedure ids. */
++  public static String canonical(Message m) {
++    if (m instanceof Atom a) {
++      return a.getValue();
++    }
++    if (m instanceof Pair p) {
++      return "<" + canonical(p.getLeft()) + "," + canonical(p.getRight()) + ">";
++    }
++    if (m instanceof Encrypt e) {
++      return "{" + canonical(e.getMsg()) + "}_" + canonical(e.getKey());
++    }
++    if (m instanceof PredictiveFunction f) {
++      StringBuilder sb = new StringBuilder(f.getName()).append('(');
++      for (int i = 0; i < f.getArgs().size(); i++) {
++        if (i > 0) {
++          sb.append(',');
++        }
++        sb.append(canonical(f.getArgs().get(i)));
++      }
++      return sb.append(')').toString();
++    }
++    throw new IllegalArgumentException("unsupported message class: " + m.getClass().getName());
++  }
++
++  public static final Comparator<Message> ORDER = Comparator.comparing(Terms::canonical);
++
++  /** Immediate arguments (empty for atoms). */
++  public static List<Message> args(Message m) {
++    if (m instanceof Pair p) {
++      return List.of(p.getLeft(), p.getRight());
++    }
++    if (m instanceof Encrypt e) {
++      return List.of(e.getMsg(), e.getKey());
++    }
++    if (m instanceof PredictiveFunction f) {
++      return f.getArgs();
++    }
++    return List.of();
++  }
++
++  /** All subterms of {@code m}, including {@code m} itself (Definition 2, extended to all args). */
++  public static Set<Message> subterms(Message m) {
++    Set<Message> out = new LinkedHashSet<>();
++    collect(m, out);
++    return out;
++  }
++
++  public static Set<Message> subterms(Iterable<Message> ms) {
++    Set<Message> out = new LinkedHashSet<>();
++    for (Message m : ms) {
++      collect(m, out);
++    }
++    return out;
++  }
++
++  private static void collect(Message m, Set<Message> out) {
++    if (out.add(m)) {
++      for (Message a : args(m)) {
++        collect(a, out);
++      }
++    }
++  }
++
++  public static boolean occursIn(Message needle, Message haystack) {
++    return subterms(haystack).contains(needle);
++  }
++
++  /**
++   * Definition 3: the top-level function symbol. Atoms share the format {@link #ATOM_FORMAT}
++   * (assumption A2: read literally, Def. 3 would make every atom its own format and forbid the
++   * paper's own PW1 → PW2 replacement).
++   */
++  public static String format(Message m) {
++    if (m instanceof Atom) {
++      return ATOM_FORMAT;
++    }
++    if (m instanceof Pair) {
++      return "pair";
++    }
++    if (m instanceof Encrypt) {
++      return "senc/2";
++    }
++    if (m instanceof PredictiveFunction f) {
++      return f.getName() + "/" + f.getArgs().size();
++    }
++    throw new IllegalArgumentException("unsupported message class: " + m.getClass().getName());
++  }
++
++  /** Returns a description of the first unsupported construct in {@code m}, if any. */
++  public static Optional<String> unsupportedConstruct(Message m) {
++    for (Message s : subterms(m)) {
++      if (s instanceof PredictiveFunction f) {
++        String n = f.getName().toLowerCase();
++        if (EQUATIONAL_SYMBOLS.contains(n)) {
++          return Optional.of("equational function symbol '" + f.getName() + "' in " + canonical(m));
++        }
++        if (DESTRUCTOR_SYMBOLS.contains(n)) {
++          return Optional.of("destructor symbol '" + f.getName() + "' inside term " + canonical(m));
++        }
++      } else if (!(s instanceof Atom || s instanceof Pair || s instanceof Encrypt)) {
++        return Optional.of("unsupported message class " + s.getClass().getSimpleName());
++      }
++    }
++    return Optional.empty();
++  }
++
++  /**
++   * Constructor (composition rule) label of {@code m}, or empty if {@code m} cannot be composed
++   * from its arguments. Labels are the paper's rule names: {@code pair}, {@code senc},
++   * {@code aenc}, and the function symbol for other public constructors (e.g. {@code sign}).
++   */
++  public static Optional<String> constructorLabel(Message m, Set<String> privateFunctions) {
++    if (m instanceof Pair) {
++      return Optional.of("pair");
++    }
++    if (m instanceof Encrypt) {
++      return Optional.of("senc");
++    }
++    if (m instanceof PredictiveFunction f) {
++      String n = f.getName();
++      if (privateFunctions.contains(n) || DESTRUCTOR_SYMBOLS.contains(n.toLowerCase())
++          || EQUATIONAL_SYMBOLS.contains(n.toLowerCase())) {
++        return Optional.empty();
++      }
++      return Optional.of(n);
++    }
++    return Optional.empty();
++  }
++
++  /** A ciphertext view: plaintext and the key needed to decrypt it. */
++  public record Cipher(Message ciphertext, Message plaintext, Message decryptionKey,
++      String decryptLabel, String encryptLabel) {}
++
++  /** Symmetric ciphertexts: {@code senc(m, k)} or legacy {@code {m}_k}; decryption key is k. */
++  public static Optional<Cipher> symmetric(Message c) {
++    if (c instanceof Encrypt e) {
++      return Optional.of(new Cipher(c, e.getMsg(), e.getKey(), "sdec", "senc"));
++    }
++    if (c instanceof PredictiveFunction f && f.getName().equals("senc") && f.getArgs().size() == 2) {
++      return Optional.of(new Cipher(c, f.getArgs().get(0), f.getArgs().get(1), "sdec", "senc"));
++    }
++    return Optional.empty();
++  }
++
++  /** Asymmetric ciphertexts {@code aenc(m, pk(sk))}; decryption key is sk (k^-1). */
++  public static Optional<Cipher> asymmetric(Message c) {
++    if (c instanceof PredictiveFunction f && f.getName().equals("aenc") && f.getArgs().size() == 2
++        && f.getArgs().get(1) instanceof PredictiveFunction pk
++        && pk.getName().equals("pk") && pk.getArgs().size() == 1) {
++      return Optional.of(new Cipher(c, f.getArgs().get(0), pk.getArgs().get(0), "adec", "aenc"));
++    }
++    return Optional.empty();
++  }
++
++  /**
++   * Simultaneous, outermost-first syntactic substitution {@code m[C]} (Algorithm 2, line 18):
++   * every occurrence of a key of {@code sub} in {@code m} is replaced by its image.
++   */
++  public static Message substitute(Message m, Map<Message, Message> sub) {
++    Message direct = sub.get(m);
++    if (direct != null) {
++      return direct;
++    }
++    if (m instanceof Pair p) {
++      Message l = substitute(p.getLeft(), sub);
++      Message r = substitute(p.getRight(), sub);
++      return (l == p.getLeft() && r == p.getRight()) ? m : new Pair(l, r);
++    }
++    if (m instanceof Encrypt e) {
++      Message pl = substitute(e.getMsg(), sub);
++      Message k = substitute(e.getKey(), sub);
++      return (pl == e.getMsg() && k == e.getKey()) ? m : new Encrypt(pl, k);
++    }
++    if (m instanceof PredictiveFunction f) {
++      List<Message> as = new ArrayList<>(f.getArgs().size());
++      boolean changed = false;
++      for (Message a : f.getArgs()) {
++        Message b = substitute(a, sub);
++        changed |= b != a;
++        as.add(b);
++      }
++      return changed ? new PredictiveFunction(f.getName(), as) : m;
++    }
++    return m;
++  }
++
++  /** Sorted copy (deterministic iteration independent of the caller's set implementation). */
++  public static List<Message> sorted(java.util.Collection<Message> ms) {
++    List<Message> out = new ArrayList<>(ms);
++    out.sort(ORDER);
++    return out;
++  }
++}
+diff --git a/src/main/java/com/xmen/service/impl/ForgetMutationStrategy.java b/src/main/java/com/xmen/service/impl/ForgetMutationStrategy.java
+index a6ceb97..54c48f1 100644
+--- a/src/main/java/com/xmen/service/impl/ForgetMutationStrategy.java
++++ b/src/main/java/com/xmen/service/impl/ForgetMutationStrategy.java
+@@ -9,6 +9,8 @@ import com.xmen.service.forget.ForgetContext;
+ import com.xmen.service.forget.ForgetContext.BlockingMode;
+ import com.xmen.service.forget.ForgetDerivationChecker;
+ import com.xmen.service.forget.ReplacementComputer;
++import com.xmen.service.forget.dl.ForgetDlBridge;
++import com.xmen.service.forget.dl.ForgetDlResult;
+ import com.xmen.utilities.SetupKnowledgeExtractor;
+ import com.xmen.utilities.UtilityFunctions;
+ import lombok.extern.slf4j.Slf4j;
+@@ -136,6 +138,19 @@ public class ForgetMutationStrategy implements MutationStrategy {
+     this.blockingMode = blockingMode;
+   }
+ 
++  // Opt-in Defeasible Logic semantics (paper §7.7, Algorithm 2). Off by default so the
++  // Algorithm 1 path and its regression fixtures are unchanged.
++  private boolean defeasibleLogicMode = false;
++  private final ForgetDlBridge forgetDlBridge = new ForgetDlBridge();
++
++  public boolean isDefeasibleLogicMode() {
++    return defeasibleLogicMode;
++  }
++
++  public void setDefeasibleLogicMode(boolean defeasibleLogicMode) {
++    this.defeasibleLogicMode = defeasibleLogicMode;
++  }
++
+   /**
+    * Applies the forget mutation strategy according to Algorithm 1.
+    *
+@@ -205,6 +220,11 @@ public class ForgetMutationStrategy implements MutationStrategy {
+       return parametersBundle;
+     }
+ 
++    if (defeasibleLogicMode) {
++      return applyDefeasibleMutation(rule, rules, parametersBundle, ctx, forgetSet,
++          receivedMessage, setup);
++    }
++
+     List<Message> forgottenMessages = new ArrayList<>();
+     for (String forgotten : forgetSet) {
+       Message forgottenMessage = resolveForgetMessage(ctx.getKnowledge(), forgotten);
+@@ -493,6 +513,102 @@ public class ForgetMutationStrategy implements MutationStrategy {
+     return parametersBundle;
+   }
+ 
++  /**
++   * Algorithm 2 (Forget-DL): the decision comes from {@link ForgetDlBridge}; rule rewriting
++   * reuses the Algorithm 1 output paths. Non-OK statuses and coverage-limited outcomes emit no
++   * mutant for this rule and are recorded in the bundle's extra content.
++   */
++  private ParametersBundle applyDefeasibleMutation(Rule rule, ArrayList<Rule> rules,
++      ParametersBundle parametersBundle, ForgetContext ctx, Set<String> forgetSet,
++      Message receivedMessage, Map<String, String> setup) {
++    List<Message> forgotten = new ArrayList<>();
++    Set<Message> usedInInternalAction = new LinkedHashSet<>();
++    Set<String> actionsToNeglect = new LinkedHashSet<>();
++    for (String f : forgetSet) {
++      Message m = resolveForgetMessage(ctx.getKnowledge(), f);
++      forgotten.add(m);
++      if (rule.isHuman()) {
++        List<Fact> internal = isMessageUsedInInternalAction(rule, m, currentNonInternalActions());
++        if (!internal.isEmpty()) {
++          usedInInternalAction.add(m);
++          for (Fact action : internal) {
++            actionsToNeglect.add(factSignature(action));
++          }
++        }
++      }
++    }
++    Message target = derivationCheckService.extractTargetFromRule(rule);
++    ForgetDlBridge.Outcome outcome = forgetDlBridge.decide(ctx.getKnowledge(), ctx.getForgetSet(),
++        receivedMessage, forgotten, usedInInternalAction, target, ctx::getTypeOf, blockingMode);
++    ForgetDlResult result = outcome.result();
++    parametersBundle.addExtraContent("forget.dl." + rule.getRule_name(), result.explain());
++    log.info("Forget-DL rule {}: status={} decision={}", rule.getRule_name(), result.status(),
++        result.decision());
++    if (result.status() != ForgetDlResult.Status.OK) {
++      return parametersBundle;
++    }
++    parametersBundle.setForgetContext(new ForgetContext(outcome.knowledgeAfter(),
++        outcome.forgetAfter(), blockingMode, ctx.getTypeMap()));
++
++    switch (result.decision()) {
++      case PRESERVE, NO_SEND -> {
++        ArrayList<Rule> theoryClone = deepCloneTheory(rules);
++        Rule startRule = findRuleByName(theoryClone, rule.getRule_name());
++        if (startRule != null) {
++          for (String f : forgetSet) {
++            removeForgetMutation(startRule, canonicalize(f));
++          }
++        }
++        parametersBundle.getCollections().add(theoryClone);
++      }
++      case NEGLECT, SKIP -> {
++        ArrayList<Rule> theoryClone = deepCloneTheory(rules);
++        Rule startRule = findRuleByName(theoryClone, rule.getRule_name());
++        if (startRule != null) {
++          if (result.decision() == ForgetDlResult.Decision.NEGLECT) {
++            removeNeglectedActions(startRule, actionsToNeglect);
++          } else {
++            removeSendAndMatchingReceive(theoryClone, startRule, target);
++          }
++          for (String f : forgetSet) {
++            removeForgetMutation(startRule, canonicalize(f));
++          }
++          startRule.setRule_name(startRule.getRule_name() + "_M");
++          startRule.setTypo(Type.MUTATED);
++        }
++        parametersBundle.getCollections().add(theoryClone);
++      }
++      case REPLACE -> {
++        List<Map<Message, Message>> subs = outcome.replacementSubstitutions();
++        for (int i = 0; i < subs.size(); i++) {
++          ArrayList<Rule> theoryClone = deepCloneTheory(rules);
++          Rule startRule = findRuleByName(theoryClone, rule.getRule_name());
++          if (startRule == null) {
++            continue;
++          }
++          Map<Message, Set<Message>> blockedToReplacements = new LinkedHashMap<>();
++          subs.get(i).forEach((b, r) -> blockedToReplacements.put(b, Set.of(r)));
++          // Passing the target itself as "variant" makes applyVariantToRule apply exactly the
++          // singleton substitutions (the syntactic variant m2[C] of Algorithm 2, line 18).
++          applyVariantToRule(startRule, target, target, blockedToReplacements);
++          startRule.setRule_name(startRule.getRule_name() + (subs.size() > 1 ? "_M" + i : "_M"));
++          startRule.setTypo(Type.MUTATED);
++          for (String f : forgetSet) {
++            removeForgetMutation(startRule, canonicalize(f));
++          }
++          propagateMutationWithVariant(theoryClone, startRule, blockedToReplacements, setup);
++          parametersBundle.getCollections().add(theoryClone);
++        }
++        if (result.partial()) {
++          parametersBundle.setVariantsTruncated(true);
++        }
++      }
++      default -> parametersBundle.addExtraContent(
++          "forget.dl.undecided." + rule.getRule_name(), result.decision().name());
++    }
++    return parametersBundle;
++  }
++
+   /**
+    * Helper class to store variant information with its replacement map.
+    */
+diff --git a/src/test/java/com/xmen/service/forget/dl/AmbiguityBlockingReasonerTest.java b/src/test/java/com/xmen/service/forget/dl/AmbiguityBlockingReasonerTest.java
+new file mode 100644
+index 0000000..ebe8226
+--- /dev/null
++++ b/src/test/java/com/xmen/service/forget/dl/AmbiguityBlockingReasonerTest.java
+@@ -0,0 +1,178 @@
++package com.xmen.service.forget.dl;
++
++import static com.xmen.service.forget.dl.DefeasibleTheory.Literal.neg;
++import static com.xmen.service.forget.dl.DefeasibleTheory.Literal.pos;
++import static org.junit.jupiter.api.Assertions.assertEquals;
++import static org.junit.jupiter.api.Assertions.assertFalse;
++import static org.junit.jupiter.api.Assertions.assertThrows;
++import static org.junit.jupiter.api.Assertions.assertTrue;
++
++import com.xmen.service.forget.dl.DefeasibleReasoner.Conclusions;
++import com.xmen.service.forget.dl.DefeasibleTheory.Literal;
++import org.junit.jupiter.api.DisplayName;
++import org.junit.jupiter.api.Test;
++
++/** Conformance suite for ambiguity-blocking DL(∂) with team defeat (Antoniou et al. 2001). */
++@DisplayName("DL(∂) conformance")
++class AmbiguityBlockingReasonerTest {
++
++  private final DefeasibleReasoner reasoner = new AmbiguityBlockingReasoner();
++
++  private Conclusions run(DefeasibleTheory.Builder b) {
++    return reasoner.reason(b.build());
++  }
++
++  private static String tags(Conclusions c, Literal l) {
++    return (c.plusDelta().contains(l) ? "+D" : "") + (c.minusDelta().contains(l) ? "-D" : "")
++        + (c.plusPartial().contains(l) ? "+d" : "") + (c.minusPartial().contains(l) ? "-d" : "");
++  }
++
++  @Test
++  @DisplayName("facts are definite; atoms without rules are refuted at both levels")
++  void factsAndUnsupportedAtoms() {
++    Conclusions c = run(DefeasibleTheory.builder().fact(pos("a")).declare("b"));
++    assertEquals("+D+d", tags(c, pos("a")));
++    assertEquals("-D-d", tags(c, pos("b")));
++    assertEquals("-D-d", tags(c, neg("a")));
++  }
++
++  @Test
++  @DisplayName("strict chains give +Δ; defeasible support gives +∂ but -Δ")
++  void strictVersusDefeasible() {
++    Conclusions c = run(DefeasibleTheory.builder().fact(pos("a"))
++        .strict("s", pos("b"), pos("a")).defeasible("r", pos("c"), pos("a")));
++    assertEquals("+D+d", tags(c, pos("b")));
++    assertEquals("-D+d", tags(c, pos("c")));
++  }
++
++  @Test
++  @DisplayName("strict rule with a defeasible premise yields +∂ only (paper §7.1 on Usable)")
++  void strictOverDefeasiblePremise() {
++    Conclusions c = run(DefeasibleTheory.builder().fact(pos("k"))
++        .defeasible("d", pos("via"), pos("k")).strict("use", pos("usable"), pos("via")));
++    assertEquals("-D+d", tags(c, pos("usable")));
++  }
++
++  @Test
++  @DisplayName("an unresolved defeater blocks the conclusion without proving its complement")
++  void defeaterBlocksWithoutProvingComplement() {
++    Conclusions c = run(DefeasibleTheory.builder().fact(pos("a"))
++        .defeasible("r", pos("p"), pos("a")).defeater("w", neg("p"), pos("a")));
++    assertEquals("-D-d", tags(c, pos("p")));
++    assertEquals("-D-d", tags(c, neg("p")));
++  }
++
++  @Test
++  @DisplayName("superior defeater: -∂p and -∂¬p (forgetting-defeater template)")
++  void superiorDefeater() {
++    Conclusions c = run(DefeasibleTheory.builder().fact(pos("known")).fact(pos("lapsed"))
++        .defeasible("d", pos("via"), pos("known")).defeater("w", neg("via"), pos("lapsed"))
++        .superior("w", "d"));
++    assertEquals("-D-d", tags(c, pos("via")));
++    assertEquals("-D-d", tags(c, neg("via")));
++  }
++
++  @Test
++  @DisplayName("inferior or inapplicable defeater does not block")
++  void inapplicableDefeater() {
++    Conclusions c = run(DefeasibleTheory.builder().fact(pos("known")).declare("lapsed")
++        .defeasible("d", pos("via"), pos("known")).defeater("w", neg("via"), pos("lapsed"))
++        .superior("w", "d"));
++    assertEquals("-D+d", tags(c, pos("via")));
++  }
++
++  @Test
++  @DisplayName("reinstater superior to the defeater restores the conclusion")
++  void reinstater() {
++    Conclusions c = run(DefeasibleTheory.builder().fact(pos("known")).fact(pos("lapsed"))
++        .fact(pos("cue"))
++        .defeasible("d", pos("via"), pos("known")).defeater("w", neg("via"), pos("lapsed"))
++        .defeasible("rho", pos("via"), pos("cue")).superior("w", "d").superior("rho", "w"));
++    assertEquals("-D+d", tags(c, pos("via")));
++  }
++
++  @Test
++  @DisplayName("team defeat: two supports jointly beat two attackers; one alone does not")
++  void teamDefeat() {
++    DefeasibleTheory.Builder team = DefeasibleTheory.builder()
++        .fact(pos("a")).fact(pos("b")).fact(pos("c")).fact(pos("e"))
++        .defeasible("r1", pos("p"), pos("a")).defeasible("r2", pos("p"), pos("b"))
++        .defeasible("s1", neg("p"), pos("c")).defeasible("s2", neg("p"), pos("e"))
++        .superior("r1", "s1").superior("r2", "s2");
++    assertEquals("-D+d", tags(run(team), pos("p")));
++    assertEquals("-D-d", tags(run(team), neg("p")));
++
++    DefeasibleTheory.Builder alone = DefeasibleTheory.builder()
++        .fact(pos("a")).fact(pos("c")).fact(pos("e"))
++        .defeasible("r1", pos("p"), pos("a"))
++        .defeasible("s1", neg("p"), pos("c")).defeasible("s2", neg("p"), pos("e"))
++        .superior("r1", "s1");
++    assertEquals("-D-d", tags(run(alone), pos("p")));
++  }
++
++  @Test
++  @DisplayName("ambiguity blocking: an ambiguous premise does not propagate")
++  void ambiguityBlocking() {
++    Conclusions c = run(DefeasibleTheory.builder()
++        .defeasible("r1", pos("p")).defeasible("r2", neg("p"))
++        .defeasible("r3", pos("q")).defeasible("r4", neg("q"), pos("p")));
++    assertEquals("-D-d", tags(c, pos("p")));
++    assertEquals("-D-d", tags(c, neg("p")));
++    assertEquals("-D+d", tags(c, pos("q")), "blocking: r4 is discarded");
++  }
++
++  @Test
++  @DisplayName("positive loops get neither tag (constructive negation)")
++  void loopsAreUndecided() {
++    Conclusions c = run(DefeasibleTheory.builder()
++        .defeasible("r", pos("p"), pos("p")).strict("s", pos("q"), pos("q")));
++    assertEquals("-D", tags(c, pos("p")));
++    assertFalse(c.decided(pos("p")));
++    assertEquals("", tags(c, pos("q")));
++  }
++
++  @Test
++  @DisplayName("empty bodies, and +Δ of the complement refutes defeasibly")
++  void emptyBodiesAndStrictOpposition() {
++    Conclusions c = run(DefeasibleTheory.builder().fact(pos("a"))
++        .strict("s", pos("p"), pos("a")).defeasible("r", neg("p"))
++        .defeasible("t", pos("q")));
++    assertEquals("+D+d", tags(c, pos("p")));
++    assertEquals("-D-d", tags(c, neg("p")));
++    assertEquals("-D+d", tags(c, pos("q")));
++  }
++
++  @Test
++  @DisplayName("defeaters are not team members in (2.3.2)")
++  void defeaterIsNotATeamMember() {
++    Conclusions c = run(DefeasibleTheory.builder()
++        .defeasible("r", pos("p")).defeater("dp", pos("p")).defeasible("s", neg("p"))
++        .superior("dp", "s"));
++    assertEquals("-D-d", tags(c, pos("p")));
++  }
++
++  @Test
++  @DisplayName("theory validation: duplicate labels, cyclic or ill-typed superiority")
++  void validation() {
++    assertThrows(IllegalArgumentException.class, () -> DefeasibleTheory.builder()
++        .defeasible("r", pos("p")).defeasible("r", pos("q")));
++    assertThrows(IllegalArgumentException.class, () -> DefeasibleTheory.builder()
++        .defeasible("r", pos("p")).defeasible("s", neg("p"))
++        .superior("r", "s").superior("s", "r").build());
++    assertThrows(IllegalArgumentException.class, () -> DefeasibleTheory.builder()
++        .defeasible("r", pos("p")).defeasible("s", pos("q")).superior("r", "s").build());
++    assertThrows(IllegalArgumentException.class, () -> DefeasibleTheory.builder()
++        .defeasible("r", pos("p")).superior("r", "missing").build());
++  }
++
++  @Test
++  @DisplayName("toText is deterministic and insertion-order independent")
++  void deterministicText() {
++    String t1 = DefeasibleTheory.builder().fact(pos("b")).fact(pos("a"))
++        .defeasible("r2", pos("q")).defeasible("r1", neg("q")).superior("r2", "r1").build().toText();
++    String t2 = DefeasibleTheory.builder().fact(pos("a")).fact(pos("b"))
++        .defeasible("r1", neg("q")).defeasible("r2", pos("q")).superior("r2", "r1").build().toText();
++    assertEquals(t1, t2);
++    assertTrue(t1.contains("sup r2 > r1"));
++  }
++}
+diff --git a/src/test/java/com/xmen/service/forget/dl/DlFixtures.java b/src/test/java/com/xmen/service/forget/dl/DlFixtures.java
+new file mode 100644
+index 0000000..f09cd32
+--- /dev/null
++++ b/src/test/java/com/xmen/service/forget/dl/DlFixtures.java
+@@ -0,0 +1,80 @@
++package com.xmen.service.forget.dl;
++
++import com.xmen.model.Atom;
++import com.xmen.model.Derivation;
++import com.xmen.model.Message;
++import com.xmen.model.Pair;
++import com.xmen.model.PredictiveFunction;
++import com.xmen.service.forget.ForgetContext.BlockingMode;
++import com.xmen.service.forget.dl.DefeasibleReasoner.Conclusions;
++import com.xmen.service.forget.dl.ForgetDlModel.CueModel;
++import com.xmen.service.forget.dl.ForgetDlModel.ProceduralState;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++
++/** Term builders and a direct compile-and-reason helper shared by the DL tests. */
++final class DlFixtures {
++  private DlFixtures() {}
++
++  static Message a(String v) {
++    return new Atom(v);
++  }
++
++  static Message pair(Message l, Message r) {
++    return new Pair(l, r);
++  }
++
++  /** Right-nested tuple ⟨m1, ⟨m2, ...⟩⟩ (paper notation). */
++  static Message tuple(Message... ms) {
++    Message t = ms[ms.length - 1];
++    for (int i = ms.length - 2; i >= 0; i--) {
++      t = new Pair(ms[i], t);
++    }
++    return t;
++  }
++
++  static Message fn(String f, Message... args) {
++    return new PredictiveFunction(f, List.of(args));
++  }
++
++  static Message senc(Message m, Message k) {
++    return fn("senc", m, k);
++  }
++
++  static Message pk(Message sk) {
++    return fn("pk", sk);
++  }
++
++  static Message aenc(Message m, Message sk) {
++    return fn("aenc", m, pk(sk));
++  }
++
++  static Message sign(Message m, Message sk) {
++    return fn("sign", m, sk);
++  }
++
++  /** Result of compiling a set of targets in one theory. */
++  record Compiled(ForgetDlCompiler.Compiled compiled, Conclusions conclusions) {
++    String usable(Message t) {
++      return conclusions.partialTag(compiled.usable().get(t));
++    }
++
++    String via(Message t, int i) {
++      return conclusions.partialTag(compiled.entries().get(t).get(i).via());
++    }
++  }
++
++  static Compiled compile(Set<Message> k, Set<Message> forget, BlockingMode mode,
++      ProceduralState proc, CueModel cues, Message... targets) {
++    NormalDerivations nd = new NormalDerivations();
++    Map<Message, List<Derivation>> byTarget = new LinkedHashMap<>();
++    for (Message t : targets) {
++      byTarget.put(t, nd.enumerate(t, k).derivations());
++    }
++    ForgetDlCompiler.Compiled c = new ForgetDlCompiler().compile(k,
++        new ForgetBlocking(forget, mode, Set.of()), proc, cues, byTarget);
++    return new Compiled(c, new AmbiguityBlockingReasoner().reason(c.theory()));
++  }
++}
+diff --git a/src/test/java/com/xmen/service/forget/dl/DlOracleHarness.java b/src/test/java/com/xmen/service/forget/dl/DlOracleHarness.java
+new file mode 100644
+index 0000000..32d1f57
+--- /dev/null
++++ b/src/test/java/com/xmen/service/forget/dl/DlOracleHarness.java
+@@ -0,0 +1,103 @@
++package com.xmen.service.forget.dl;
++
++import com.xmen.model.Message;
++import com.xmen.service.forget.dl.DefeasibleReasoner.Conclusions;
++import com.xmen.service.forget.dl.DefeasibleTheory.Literal;
++import com.xmen.service.forget.dl.DefeasibleTheory.Rule;
++import com.xmen.service.forget.dl.DefeasibleTheory.RuleKind;
++import java.io.IOException;
++import java.io.PrintStream;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Random;
++
++/**
++ * Test-side harness for the differential check against an external DL encoding
++ * (scripts/dl-oracle/asp_crosscheck.py). Line format, one theory per block:
++ * {@code theory ID / declare A / fact [-]A / rule LABEL S|D|F [-]HEAD [-]BODY... / sup T S / end}.
++ *
++ * <pre>
++ * export N SEED   print N theories compiled from random Forget scenarios
++ * tags FILE       print "ID LITERAL TAGS" for every literal of every theory in FILE
++ * </pre>
++ */
++public final class DlOracleHarness {
++
++  private DlOracleHarness() {}
++
++  public static void main(String[] args) throws IOException {
++    PrintStream out = new PrintStream(System.out, true, StandardCharsets.UTF_8);
++    if (args[0].equals("export")) {
++      Random r = new Random(Long.parseLong(args[2]));
++      for (int i = 0; i < Integer.parseInt(args[1]); i++) {
++        ForgetDlPropertiesTest.Scenario s = ForgetDlPropertiesTest.random(r);
++        DlFixtures.Compiled c = DlFixtures.compile(s.k(), s.forget(), s.mode(), s.proc(),
++            s.cues(), s.targets().toArray(Message[]::new));
++        out.print(write("compiled" + i, c.compiled().theory()));
++      }
++      return;
++    }
++    List<String> lines = Files.readAllLines(Path.of(args[1]), StandardCharsets.UTF_8);
++    DefeasibleTheory.Builder b = null;
++    String id = null;
++    AmbiguityBlockingReasoner reasoner = new AmbiguityBlockingReasoner();
++    for (String line : lines) {
++      String[] t = line.trim().split("\\s+");
++      switch (t[0]) {
++        case "theory" -> {
++          b = DefeasibleTheory.builder();
++          id = t[1];
++        }
++        case "declare" -> b.declare(t[1]);
++        case "fact" -> b.fact(lit(t[1]));
++        case "rule" -> {
++          List<Literal> body = new ArrayList<>();
++          for (int i = 4; i < t.length; i++) {
++            body.add(lit(t[i]));
++          }
++          RuleKind k = switch (t[2]) {
++            case "S" -> RuleKind.STRICT;
++            case "D" -> RuleKind.DEFEASIBLE;
++            default -> RuleKind.DEFEATER;
++          };
++          b.rule(new Rule(t[1], k, body, lit(t[3])));
++        }
++        case "sup" -> b.superior(t[1], t[2]);
++        case "end" -> {
++          DefeasibleTheory th = b.build();
++          Conclusions c = reasoner.reason(th);
++          for (String a : th.atoms()) {
++            for (Literal l : List.of(Literal.pos(a), Literal.neg(a))) {
++              out.println(id + " " + (l.negated() ? "-" : "") + a + " "
++                  + (c.plusDelta().contains(l) ? "+D" : "") + (c.minusDelta().contains(l) ? "-D" : "")
++                  + (c.plusPartial().contains(l) ? "+d" : "") + (c.minusPartial().contains(l) ? "-d" : ""));
++            }
++          }
++        }
++        default -> { }
++      }
++    }
++  }
++
++  private static Literal lit(String s) {
++    return s.startsWith("-") ? Literal.neg(s.substring(1)) : Literal.pos(s);
++  }
++
++  static String write(String id, DefeasibleTheory th) {
++    StringBuilder sb = new StringBuilder("theory ").append(id).append('\n');
++    th.atoms().forEach(a -> sb.append("declare ").append(a).append('\n'));
++    th.facts().forEach(f -> sb.append("fact ").append(f.negated() ? "-" : "").append(f.atom()).append('\n'));
++    for (Rule r : th.rules()) {
++      sb.append("rule ").append(r.label()).append(' ')
++          .append(r.kind() == RuleKind.STRICT ? "S" : r.kind() == RuleKind.DEFEASIBLE ? "D" : "F")
++          .append(' ').append(r.head().negated() ? "-" : "").append(r.head().atom());
++      r.body().forEach(l -> sb.append(' ').append(l.negated() ? "-" : "").append(l.atom()));
++      sb.append('\n');
++    }
++    th.superiorityPairs().forEach(p -> sb.append("sup ").append(p[0]).append(' ').append(p[1]).append('\n'));
++    return sb.append("end\n").toString();
++  }
++}
+diff --git a/src/test/java/com/xmen/service/forget/dl/ForgetBlockingTest.java b/src/test/java/com/xmen/service/forget/dl/ForgetBlockingTest.java
+new file mode 100644
+index 0000000..a95682c
+--- /dev/null
++++ b/src/test/java/com/xmen/service/forget/dl/ForgetBlockingTest.java
+@@ -0,0 +1,83 @@
++package com.xmen.service.forget.dl;
++
++import static com.xmen.service.forget.dl.DlFixtures.a;
++import static com.xmen.service.forget.dl.DlFixtures.aenc;
++import static com.xmen.service.forget.dl.DlFixtures.pair;
++import static com.xmen.service.forget.dl.DlFixtures.pk;
++import static com.xmen.service.forget.dl.DlFixtures.senc;
++import static org.junit.jupiter.api.Assertions.assertEquals;
++import static org.junit.jupiter.api.Assertions.assertFalse;
++import static org.junit.jupiter.api.Assertions.assertTrue;
++
++import com.xmen.model.Message;
++import com.xmen.service.forget.ForgetContext.BlockingMode;
++import java.util.Set;
++import org.junit.jupiter.api.DisplayName;
++import org.junit.jupiter.api.Test;
++
++/** Definition 5: Blocked(Hyp, Forget) for Cases 1–3. */
++@DisplayName("Blocked, Cases 1-3")
++class ForgetBlockingTest {
++
++  private final Message m1 = a("m1");
++  private final Message m2 = a("m2");
++
++  private static ForgetBlocking b(BlockingMode mode, Message... forget) {
++    return new ForgetBlocking(Set.of(forget), mode, Set.of());
++  }
++
++  @Test
++  @DisplayName("Example 4/7: no key in Forget, all cases agree")
++  void example4() {
++    for (BlockingMode mode : BlockingMode.values()) {
++      ForgetBlocking f = b(mode, senc(m1, m2));
++      assertTrue(f.isBlocked(senc(m1, m2)));
++      assertFalse(f.isBlocked(m1), mode.name());
++    }
++  }
++
++  @Test
++  @DisplayName("Example 5/8: only Case 3 decrypts the forgotten ciphertext")
++  void example5() {
++    assertFalse(b(BlockingMode.CASE1_WEAK, senc(m1, m2), m2).isBlocked(m1));
++    assertFalse(b(BlockingMode.CASE2_PAIRING, senc(m1, m2), m2).isBlocked(m1));
++    assertTrue(b(BlockingMode.CASE3_FULL_DY, senc(m1, m2), m2).isBlocked(m1));
++  }
++
++  @Test
++  @DisplayName("Example 6/9: pair decomposition from Case 2 on")
++  void example6() {
++    Message p = pair(m1, m2);
++    assertFalse(b(BlockingMode.CASE1_WEAK, p).isBlocked(m1));
++    assertTrue(b(BlockingMode.CASE2_PAIRING, p).isBlocked(m1));
++    assertTrue(b(BlockingMode.CASE2_PAIRING, p).isBlocked(m2));
++    assertTrue(b(BlockingMode.CASE3_FULL_DY, p).isBlocked(m2));
++  }
++
++  @Test
++  @DisplayName("Case 2 composition: forgetting both components forgets the pair")
++  void composition() {
++    assertFalse(b(BlockingMode.CASE1_WEAK, m1, m2).isBlocked(pair(m1, m2)));
++    assertTrue(b(BlockingMode.CASE2_PAIRING, m1, m2).isBlocked(pair(m1, m2)));
++    assertFalse(b(BlockingMode.CASE2_PAIRING, m1).isBlocked(pair(m1, m2)));
++    assertFalse(b(BlockingMode.CASE2_PAIRING, m1, m2).isBlocked(senc(m1, m2)));
++    assertTrue(b(BlockingMode.CASE3_FULL_DY, m1, m2).isBlocked(senc(m1, m2)));
++  }
++
++  @Test
++  @DisplayName("Case 3: asymmetric decryption with a forgotten private key, and nested analysis")
++  void case3Nested() {
++    Message sk = a("sk"), x = a("x"), k2 = a("k2");
++    ForgetBlocking f = b(BlockingMode.CASE3_FULL_DY, aenc(senc(x, k2), sk), pair(sk, k2));
++    assertTrue(f.isBlocked(x));
++    assertTrue(f.isBlocked(pk(sk)));
++    assertFalse(f.isBlocked(a("y")));
++  }
++
++  @Test
++  @DisplayName("blocked() returns the blocked subset in canonical order")
++  void blockedSubset() {
++    Set<Message> out = b(BlockingMode.CASE1_WEAK, m2, m1).blocked(Set.of(m2, a("z"), m1));
++    assertEquals("[m1, m2]", out.stream().map(Terms::canonical).toList().toString());
++  }
++}
+diff --git a/src/test/java/com/xmen/service/forget/dl/ForgetDlBridgeTest.java b/src/test/java/com/xmen/service/forget/dl/ForgetDlBridgeTest.java
+new file mode 100644
+index 0000000..63707e1
+--- /dev/null
++++ b/src/test/java/com/xmen/service/forget/dl/ForgetDlBridgeTest.java
+@@ -0,0 +1,79 @@
++package com.xmen.service.forget.dl;
++
++import static com.xmen.service.forget.dl.DlFixtures.a;
++import static com.xmen.service.forget.dl.DlFixtures.aenc;
++import static com.xmen.service.forget.dl.DlFixtures.fn;
++import static com.xmen.service.forget.dl.DlFixtures.pair;
++import static com.xmen.service.forget.dl.DlFixtures.senc;
++import static org.junit.jupiter.api.Assertions.assertEquals;
++import static org.junit.jupiter.api.Assertions.assertFalse;
++import static org.junit.jupiter.api.Assertions.assertTrue;
++
++import com.xmen.model.Message;
++import com.xmen.service.forget.ForgetContext.BlockingMode;
++import com.xmen.service.forget.dl.ForgetDlResult.Decision;
++import com.xmen.service.forget.dl.ForgetDlResult.Status;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++import java.util.function.Function;
++import org.junit.jupiter.api.DisplayName;
++import org.junit.jupiter.api.Test;
++
++/** Host adapter on the shapes produced by X-Men for src/test/resources/Forget_Bank_Input.spthy. */
++@DisplayName("Host bridge")
++class ForgetDlBridgeTest {
++
++  private final ForgetDlBridge bridge = new ForgetDlBridge();
++  private final Message pw1 = a("~pw1");
++  private final Message pw2 = a("~pw2");
++  private final Message nh = a("nH");
++  private final Message nb = a("nB");
++  private final Message ltkH = a("ltkH");
++  private final Set<Message> stateK = Set.of(a("$B1"), a("$B2"), nh, pw1, pw2, ltkH);
++  private final Message challenge = aenc(pair(nh, nb), ltkH);
++  private final Message send = senc(pair(a("$Human"), a("pw1")), fn("k", nh, nb));
++  private final Function<Message, String> typeOf = m -> switch (Terms.canonical(m)) {
++    case "pw1", "~pw1", "pw2", "~pw2" -> "password";
++    default -> null;
++  };
++
++  @Test
++  @DisplayName("H_2 of Forget_Bank_Input: Forget(pw1) → Replace pw1 by pw2 (k/2 composable, $Human public)")
++  void bankRuleH2() {
++    ForgetDlBridge.Outcome o = bridge.decide(stateK, Set.of(), challenge, List.of(a("pw1")),
++        Set.of(), send, typeOf, BlockingMode.CASE1_WEAK);
++    assertEquals(Status.OK, o.result().status());
++    assertEquals(Decision.REPLACE, o.result().decision());
++    assertEquals(List.of(Map.of(a("pw1"), a("pw2"))), o.replacementSubstitutions());
++    assertEquals(senc(pair(a("$Human"), a("pw2")), fn("k", nh, nb)), o.replacementTargets().get(0));
++    assertEquals(Set.of(pw1), o.forgetAfter(), "host representation (tilde) preserved");
++    assertTrue(o.knowledgeAfter().contains(challenge));
++    assertFalse(o.knowledgeAfter().contains(a("$Human")), "A10: injected public constant not written back");
++  }
++
++  @Test
++  @DisplayName("unknown forgotten message is an explicit INVALID_INPUT, not a fabricated atom")
++  void fabricatedForgetIsRejected() {
++    ForgetDlBridge.Outcome o = bridge.decide(stateK, Set.of(), challenge, List.of(a("pw9")),
++        Set.of(), send, typeOf, BlockingMode.CASE1_WEAK);
++    assertEquals(Status.INVALID_INPUT, o.result().status());
++    assertTrue(o.replacementSubstitutions().isEmpty());
++  }
++
++  @Test
++  @DisplayName("forgotten value used by an internal check → Neglect and return")
++  void neglect() {
++    ForgetDlBridge.Outcome o = bridge.decide(stateK, Set.of(), challenge, List.of(nh), Set.of(nh),
++        send, typeOf, BlockingMode.CASE1_WEAK);
++    assertEquals(Decision.NEGLECT, o.result().decision());
++  }
++
++  @Test
++  @DisplayName("only password left is forgotten → Skip")
++  void skip() {
++    ForgetDlBridge.Outcome o = bridge.decide(Set.of(a("$B1"), nh, pw1, ltkH), Set.of(), challenge,
++        List.of(pw1), Set.of(), send, typeOf, BlockingMode.CASE1_WEAK);
++    assertEquals(Decision.SKIP, o.result().decision());
++  }
++}
+diff --git a/src/test/java/com/xmen/service/forget/dl/ForgetDlEngineTest.java b/src/test/java/com/xmen/service/forget/dl/ForgetDlEngineTest.java
+new file mode 100644
+index 0000000..1d6af3f
+--- /dev/null
++++ b/src/test/java/com/xmen/service/forget/dl/ForgetDlEngineTest.java
+@@ -0,0 +1,226 @@
++package com.xmen.service.forget.dl;
++
++import static com.xmen.service.forget.dl.DlFixtures.a;
++import static com.xmen.service.forget.dl.DlFixtures.fn;
++import static com.xmen.service.forget.dl.DlFixtures.pair;
++import static com.xmen.service.forget.dl.DlFixtures.senc;
++import static org.junit.jupiter.api.Assertions.assertEquals;
++import static org.junit.jupiter.api.Assertions.assertFalse;
++import static org.junit.jupiter.api.Assertions.assertTrue;
++
++import com.xmen.model.Message;
++import com.xmen.service.forget.ForgetContext.BlockingMode;
++import com.xmen.service.forget.dl.ForgetDlModel.Association;
++import com.xmen.service.forget.dl.ForgetDlModel.CueModel;
++import com.xmen.service.forget.dl.ForgetDlModel.HumanState;
++import com.xmen.service.forget.dl.ForgetDlModel.ProceduralState;
++import com.xmen.service.forget.dl.ForgetDlModel.TransitionInput;
++import com.xmen.service.forget.dl.ForgetDlResult.Decision;
++import com.xmen.service.forget.dl.ForgetDlResult.Status;
++import java.util.LinkedHashSet;
++import java.util.List;
++import java.util.Set;
++import org.junit.jupiter.api.DisplayName;
++import org.junit.jupiter.api.Test;
++
++/** Algorithm 2 state update, re-acquisition, candidate generation and coverage handling. */
++@DisplayName("Algorithm 2 engine")
++class ForgetDlEngineTest {
++
++  private final ForgetDlEngine engine = new ForgetDlEngine();
++  private final Message h = a("H");
++  private final Message pw1 = a("pw1");
++  private final Message pw2 = a("pw2");
++
++  private TransitionInput.Builder in(Set<Message> k, Set<Message> f) {
++    return TransitionInput.builder(new HumanState(k, f, ProceduralState.EMPTY));
++  }
++
++  @Test
++  @DisplayName("erratum E1: forgetting an old message keeps the just-received message (Alg. 1 l.6)")
++  void erratumReceivedMessageIsKept() {
++    Message m1 = a("m1");
++    ForgetDlResult r = engine.run(in(Set.of(pw1, h), Set.of()).received(m1).forget(pw1).build());
++    assertEquals(Decision.NO_SEND, r.decision());
++    assertTrue(r.after().knowledge().containsAll(Set.of(pw1, h, m1)));
++    assertEquals(Set.of(pw1), r.after().forget());
++  }
++
++  @Test
++  @DisplayName("Example 2: forgetting the received message leaves K and Forget unchanged")
++  void forgetJustReceived() {
++    Message m1 = a("m1");
++    ForgetDlResult r = engine.run(in(Set.of(a("m2"), a("m4")), Set.of()).received(m1).forget(m1)
++        .build());
++    assertEquals(Set.of(a("m2"), a("m4")), r.after().knowledge());
++    assertTrue(r.after().forget().isEmpty());
++    ForgetDlResult again = engine.run(in(Set.of(pw1, h), Set.of(pw1)).received(pw1).forget(pw1)
++        .build());
++    assertEquals(Set.of(pw1), again.after().forget(), "not a re-acquisition (contrast host D7)");
++  }
++
++  @Test
++  @DisplayName("lines 5-6: a lapsed message used in an internal action triggers Neglect and returns")
++  void neglect() {
++    Message nh = a("nH");
++    ForgetDlResult r = engine.run(in(Set.of(nh, h), Set.of()).forget(nh)
++        .internalAction(fn("Eq", nh, a("nH_recv"))).send(pair(h, nh)).build());
++    assertEquals(Decision.NEGLECT, r.decision());
++    assertEquals(Set.of(nh), r.neglected());
++    assertEquals(Set.of(nh), r.after().forget());
++    assertTrue(r.candidates().isEmpty());
++  }
++
++  @Test
++  @DisplayName("Example 3: re-acquisition by receipt, by a key, or via a received ciphertext")
++  void reacquisition() {
++    Message m1 = a("m1"), m2 = a("m2"), m4 = a("m4"), m5 = a("m5");
++    Set<Message> k = Set.of(senc(pair(m2, m4), m5), m2, m4, m1);
++    assertEquals(Set.of(m2), engine.run(in(k, Set.of(m2)).received(m2).build()).reacquired());
++    ForgetDlResult byKey = engine.run(in(k, Set.of(m2)).received(m5).build());
++    assertEquals(Set.of(m2), byKey.reacquired());
++    assertTrue(byKey.after().forget().isEmpty());
++    assertEquals(Set.of(m2),
++        engine.run(in(k, Set.of(m2)).received(senc(m5, m1)).build()).reacquired());
++    assertEquals(Set.of(m2), engine.run(in(k, Set.of(m2)).received(a("x")).build()).after().forget());
++    ForgetDlResult same = engine.run(in(k, Set.of()).received(m5).forget(m2).build());
++    assertEquals(Set.of(m2), same.after().forget(), "A6: a lapse is not undone in its own transition");
++  }
++
++  @Test
++  @DisplayName("A6: an unrelated receipt does not clear a lapse that stays derivable another way")
++  void reacquisitionNeedsReceiptProvenance() {
++    Message m1 = a("m1"), k = a("k");
++    Set<Message> kn = Set.of(m1, senc(m1, k), k);
++    ForgetDlResult r = engine.run(in(kn, Set.of(m1)).received(a("x")).send(m1).build());
++    assertEquals(Set.of(m1), r.after().forget(), "retrieval lapse stays recorded");
++    assertEquals(Decision.PRESERVE, r.decision(), "usable through the decryption branch");
++  }
++
++  @Test
++  @DisplayName("§7.6: procedural lapses persist; explicit relearning removes them; cues do not")
++  void proceduralStateUpdate() {
++    HumanState s = new HumanState(Set.of(h), Set.of(), new ProceduralState(Set.of("sdec"), Set.of()));
++    ForgetDlResult r = engine.run(TransitionInput.builder(s)
++        .lapse(new ForgetDlModel.RuleLapse("pair")).build());
++    assertEquals(Set.of("pair", "sdec"), r.after().procedural().forgottenRules());
++    ForgetDlResult rel = engine.run(TransitionInput.builder(r.after()).relearnRule("sdec").build());
++    assertEquals(Set.of("pair"), rel.after().procedural().forgottenRules());
++    ForgetDlResult cued = engine.run(TransitionInput.builder(r.after()).send(pair(h, h))
++        .cues(new CueModel(Set.of("c"), Set.of(new Association("c", h)), Set.of("c"))).build());
++    assertEquals(Decision.SKIP, cued.decision(), "message cues do not restore competences");
++  }
++
++  @Test
++  @DisplayName("invalid input and unsupported algebra are explicit failures")
++  void failures() {
++    assertEquals(Status.INVALID_INPUT,
++        engine.run(in(Set.of(h), Set.of()).forget(pw1).send(h).build()).status());
++    assertEquals(Status.INVALID_INPUT, engine.run(in(Set.of(h), Set.of()).send(h)
++        .cues(new CueModel(Set.of("c"), Set.of(new Association("c", pw1)), Set.of())).build())
++        .status());
++    assertEquals(Status.INVALID_INPUT, engine.run(in(Set.of(h), Set.of()).send(h)
++        .cues(new CueModel(Set.of(), Set.of(), Set.of("ghost"))).build()).status());
++    ForgetDlResult x = engine.run(in(Set.of(h), Set.of()).send(fn("xor", h, h)).build());
++    assertEquals(Status.UNSUPPORTED, x.status());
++    assertEquals(Decision.NONE, x.decision());
++  }
++
++  @Test
++  @DisplayName("truncated enumeration yields UNKNOWN_COVERAGE, never Skip")
++  void coverage() {
++    ForgetDlEngine tiny = new ForgetDlEngine(new AmbiguityBlockingReasoner(), Set.of(),
++        new ForgetDlEngine.Limits(new NormalDerivations.Limits(1, 1_000), 256));
++    Message t = pair(pair(h, pw1), pair(h, pw1));
++    Set<Message> k = Set.of(h, pw1, pair(h, pw1));
++    ForgetDlResult r = tiny.run(in(k, Set.of(pw1, pair(h, pw1))).send(t).build());
++    assertEquals(Decision.UNKNOWN_COVERAGE, r.decision());
++    assertEquals(Decision.SKIP, engine.run(in(k, Set.of(pw1, pair(h, pw1))).send(t).build())
++        .decision());
++  }
++
++  @Test
++  @DisplayName("candidate cap: justified replacements are emitted but marked partial")
++  void candidateCap() {
++    Set<Message> k = new LinkedHashSet<>(List.of(h, pw1, pw2, a("pw3"), a("pw4")));
++    TransitionInput.Builder b = in(k, Set.of()).forget(pw1).send(pair(h, pw1));
++    k.stream().filter(m -> !m.equals(h)).forEach(m -> b.label(m, "password"));
++    ForgetDlEngine capped = new ForgetDlEngine(new AmbiguityBlockingReasoner(), Set.of(),
++        new ForgetDlEngine.Limits(NormalDerivations.Limits.DEFAULT, 2));
++    ForgetDlResult r = capped.run(b.build());
++    assertEquals(Decision.REPLACE, r.decision());
++    assertTrue(r.partial());
++    assertEquals(1, r.replacements().size());
++    ForgetDlResult full = engine.run(b.build());
++    assertEquals(3, full.replacements().size());
++    assertFalse(full.partial());
++  }
++
++  @Test
++  @DisplayName("A4: a blocked hypothesis without a label has no replacement")
++  void labelRequired() {
++    ForgetDlResult r = engine.run(in(Set.of(h, pw1, pw2), Set.of()).forget(pw1)
++        .send(pair(h, pw1)).label(pw2, "password").build());
++    assertEquals(Decision.SKIP, r.decision());
++  }
++
++  @Test
++  @DisplayName("format: replacements must share the top-level symbol")
++  void formatRequired() {
++    Message hashed = fn("h", pw2);
++    ForgetDlResult r = engine.run(in(Set.of(h, pw1, hashed), Set.of()).forget(pw1)
++        .send(pair(h, pw1)).label(pw1, "password").label(hashed, "password").build());
++    assertEquals(Decision.SKIP, r.decision());
++  }
++
++  @Test
++  @DisplayName("§7.7 Case 2: a closure-blocked replacement is generated but not emitted")
++  void closureBlockedVariant() {
++    Message salt = a("salt");
++    Set<Message> k = Set.of(h, pw1, pw2, pair(pw2, salt));
++    ForgetDlResult r = engine.run(in(k, Set.of(pair(pw2, salt))).forget(pw1).send(pair(h, pw1))
++        .closure(BlockingMode.CASE2_PAIRING).label(pw1, "password").label(pw2, "password").build());
++    assertEquals(2, r.candidates().size(), "pw2 passes the syntactic test pw2 ∉ Forget");
++    assertEquals(Decision.SKIP, r.decision(), "Algorithm 1 would Replace here");
++    ForgetDlResult case1 = engine.run(in(k, Set.of(pair(pw2, salt))).forget(pw1)
++        .send(pair(h, pw1)).label(pw1, "password").label(pw2, "password").build());
++    assertEquals(Decision.REPLACE, case1.decision());
++  }
++
++  @Test
++  @DisplayName("A5: a closure-blocked hypothesis is never replaced by itself")
++  void noSelfReplacement() {
++    Message salt = a("salt");
++    Set<Message> k = Set.of(h, pw1, pw2, pair(pw1, salt));
++    ForgetDlResult r = engine.run(in(k, Set.of(pair(pw1, salt))).send(pair(h, pw1))
++        .closure(BlockingMode.CASE2_PAIRING).label(pw1, "password").label(pw2, "password").build());
++    assertEquals(Decision.REPLACE, r.decision());
++    assertTrue(r.candidates().get(0).substitutions().isEmpty());
++    assertEquals(pair(h, pw2), r.replacements().get(0).target());
++  }
++
++  @Test
++  @DisplayName("several lapses in one transition compose; Replace covers every blocked hypothesis")
++  void multipleLapses() {
++    Message u1 = a("u1"), u2 = a("u2");
++    ForgetDlResult r = engine.run(in(Set.of(u1, u2, pw1, pw2), Set.of()).forget(u1).forget(pw1)
++        .send(pair(u1, pw1)).label(u1, "user").label(u2, "user").label(pw1, "password")
++        .label(pw2, "password").build());
++    assertEquals(Decision.REPLACE, r.decision());
++    assertEquals(List.of(pair(u2, pw2)),
++        r.replacements().stream().map(ForgetDlResult.Candidate::target).toList());
++  }
++
++  @Test
++  @DisplayName("determinism: insertion order does not change theory, trace or decision")
++  void determinism() {
++    Set<Message> k1 = new LinkedHashSet<>(List.of(h, pw1, pw2, senc(pw1, h)));
++    Set<Message> k2 = new LinkedHashSet<>(List.of(senc(pw1, h), pw2, pw1, h));
++    ForgetDlResult r1 = engine.run(in(k1, Set.of()).forget(pw1).send(pair(h, pw1))
++        .label(pw1, "password").label(pw2, "password").build());
++    ForgetDlResult r2 = engine.run(in(k2, Set.of()).forget(pw1).send(pair(h, pw1))
++        .label(pw2, "password").label(pw1, "password").build());
++    assertEquals(r1.compiled().theory().toText(), r2.compiled().theory().toText());
++    assertEquals(r1.explain(), r2.explain());
++  }
++}
+diff --git a/src/test/java/com/xmen/service/forget/dl/ForgetDlPaperExamplesTest.java b/src/test/java/com/xmen/service/forget/dl/ForgetDlPaperExamplesTest.java
+new file mode 100644
+index 0000000..861c0f8
+--- /dev/null
++++ b/src/test/java/com/xmen/service/forget/dl/ForgetDlPaperExamplesTest.java
+@@ -0,0 +1,362 @@
++package com.xmen.service.forget.dl;
++
++import static com.xmen.service.forget.dl.DlFixtures.a;
++import static com.xmen.service.forget.dl.DlFixtures.aenc;
++import static com.xmen.service.forget.dl.DlFixtures.pair;
++import static com.xmen.service.forget.dl.DlFixtures.senc;
++import static com.xmen.service.forget.dl.DlFixtures.sign;
++import static com.xmen.service.forget.dl.DlFixtures.tuple;
++import static org.junit.jupiter.api.Assertions.assertEquals;
++import static org.junit.jupiter.api.Assertions.assertFalse;
++import static org.junit.jupiter.api.Assertions.assertTrue;
++
++import com.xmen.model.Message;
++import com.xmen.service.forget.ForgetContext.BlockingMode;
++import com.xmen.service.forget.dl.ForgetDlModel.Association;
++import com.xmen.service.forget.dl.ForgetDlModel.CueModel;
++import com.xmen.service.forget.dl.ForgetDlModel.HumanState;
++import com.xmen.service.forget.dl.ForgetDlModel.ProceduralState;
++import com.xmen.service.forget.dl.ForgetDlModel.TransitionInput;
++import com.xmen.service.forget.dl.ForgetDlResult.BlockerKind;
++import com.xmen.service.forget.dl.ForgetDlResult.Decision;
++import com.xmen.service.forget.dl.ForgetDlResult.DerivationTrace;
++import com.xmen.service.forget.dl.ForgetDlResult.TargetTrace;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++import org.junit.jupiter.api.DisplayName;
++import org.junit.jupiter.api.Test;
++
++/** Paper examples 7–10, Lemma 1, §7.8 and the extended examples of §8 (Tables 3 and 4). */
++@DisplayName("Paper examples (Sections 7-8)")
++class ForgetDlPaperExamplesTest {
++
++  private final ForgetDlEngine engine = new ForgetDlEngine();
++  private final Message m1 = a("m1");
++  private final Message m2 = a("m2");
++
++  private static HumanState state(Set<Message> k, Set<Message> forget, ProceduralState p) {
++    return new HumanState(k, forget, p);
++  }
++
++  private static CueModel cue(String c, Message m, boolean present) {
++    return new CueModel(Set.of(c), Set.of(new Association(c, m)), present ? Set.of(c) : Set.of());
++  }
++
++  private static TargetTrace trace(ForgetDlResult r, Message t) {
++    return r.trace().stream().filter(x -> x.target().equals(t)).findFirst().orElseThrow();
++  }
++
++  // ---------------- §7.4, Examples 7-9 ----------------
++
++  @Test
++  @DisplayName("Example 7: the decryption branch is blocked, the direct branch survives")
++  void example7() {
++    Message c = senc(m1, m2);
++    for (BlockingMode mode : BlockingMode.values()) {
++      ForgetDlResult r = engine.run(TransitionInput.builder(
++          state(Set.of(m1, c, m2), Set.of(c), ProceduralState.EMPTY)).send(m1).closure(mode).build());
++      assertEquals(Decision.PRESERVE, r.decision(), mode.name());
++      assertEquals(Set.of(c), r.compiled().lapsedMessages(), "same Lapsed set in every case");
++      TargetTrace t = trace(r, m1);
++      assertEquals("+∂", t.usableTag());
++      DerivationTrace dec = t.derivations().stream()
++          .filter(d -> d.hypotheses().contains(c)).findFirst().orElseThrow();
++      assertEquals("-∂", dec.viaTag());
++      assertEquals(BlockerKind.DECLARATIVE, dec.standing().get(0).kind());
++    }
++  }
++
++  @Test
++  @DisplayName("Example 8: Cases 1-2 keep m1 usable; Case 3 closure blocks the direct branch")
++  void example8() {
++    Message c = senc(m1, m2);
++    Set<Message> k = Set.of(m1, c, m2);
++    Set<Message> f = Set.of(c, m2);
++    assertEquals("+∂", DlFixtures.compile(k, f, BlockingMode.CASE1_WEAK, ProceduralState.EMPTY,
++        CueModel.NONE, m1).usable(m1));
++    assertEquals("+∂", DlFixtures.compile(k, f, BlockingMode.CASE2_PAIRING, ProceduralState.EMPTY,
++        CueModel.NONE, m1).usable(m1));
++    DlFixtures.Compiled c3 = DlFixtures.compile(k, f, BlockingMode.CASE3_FULL_DY,
++        ProceduralState.EMPTY, CueModel.NONE, m1);
++    assertEquals("-∂", c3.usable(m1));
++    assertEquals(Set.of(m1, c, m2), c3.compiled().lapsedMessages());
++  }
++
++  @Test
++  @DisplayName("Example 9: a forgotten pair is harmless in Case 1, blocks both components in Cases 2-3")
++  void example9() {
++    Message p = pair(m1, m2);
++    Set<Message> k = Set.of(p, m1, m2);
++    DlFixtures.Compiled c1 = DlFixtures.compile(k, Set.of(p), BlockingMode.CASE1_WEAK,
++        ProceduralState.EMPTY, CueModel.NONE, m1, m2);
++    assertEquals("+∂", c1.usable(m1));
++    assertEquals("+∂", c1.usable(m2));
++    for (BlockingMode mode : List.of(BlockingMode.CASE2_PAIRING, BlockingMode.CASE3_FULL_DY)) {
++      DlFixtures.Compiled c = DlFixtures.compile(k, Set.of(p), mode, ProceduralState.EMPTY,
++          CueModel.NONE, m1, m2);
++      assertEquals("-∂", c.usable(m1), mode.name());
++      assertEquals("-∂", c.usable(m2), mode.name());
++    }
++  }
++
++  // ---------------- §7.6, Example 10 ----------------
++
++  private final Message h = a("H");
++  private final Message pw = a("PW");
++  private final Message skH = a("skH");
++  private final Message nh = a("NH");
++  private final Message nb = a("NB");
++  private final Message challenge = aenc(pair(nh, nb), skH);
++  private final Message credential = senc(pair(h, pw), pair(nh, nb));
++  private final Set<Message> bankK = Set.of(h, pw, skH, nh, challenge);
++
++  @Test
++  @DisplayName("Example 10a: forgetting r_senc blocks the unique derivation → Skip")
++  void example10RuleLapse() {
++    ForgetDlResult r = engine.run(TransitionInput.builder(
++        state(bankK, Set.of(), new ProceduralState(Set.of("senc"), Set.of()))).send(credential).build());
++    assertEquals(Decision.SKIP, r.decision());
++    assertEquals(1, r.candidates().size(), "T = {m2}");
++    DerivationTrace d = trace(r, credential).derivations().get(0);
++    assertEquals(BlockerKind.RULE, d.standing().get(0).kind());
++    assertEquals("senc", d.standing().get(0).subject());
++  }
++
++  @Test
++  @DisplayName("Example 10b: forgetting π as a whole → Skip, by a procedure-level defeater")
++  void example10ProcedureLapse() {
++    String pid = NormalDerivations.procedureId(
++        new NormalDerivations().enumerate(credential, bankK).derivations().get(0));
++    ForgetDlResult r = engine.run(TransitionInput.builder(
++        state(bankK, Set.of(), new ProceduralState(Set.of(), Set.of(pid)))).send(credential).build());
++    assertEquals(Decision.SKIP, r.decision());
++    assertEquals(BlockerKind.PROCEDURE,
++        trace(r, credential).derivations().get(0).standing().get(0).kind());
++  }
++
++  @Test
++  @DisplayName("§7.2 scope: a rule lapse is global, a procedure lapse blocks only the named tree")
++  void ruleVersusProcedureScope() {
++    Message n1 = a("n1"), n2 = a("n2"), key = a("k");
++    Set<Message> k = Set.of(senc(pair(n1, n2), key), key);
++    String piN1 = NormalDerivations.procedureId(
++        new NormalDerivations().enumerate(n1, k).derivations().get(0));
++    DlFixtures.Compiled rule = DlFixtures.compile(k, Set.of(), BlockingMode.CASE1_WEAK,
++        new ProceduralState(Set.of("sdec"), Set.of()), CueModel.NONE, n1, n2);
++    assertEquals("-∂", rule.usable(n1));
++    assertEquals("-∂", rule.usable(n2));
++    DlFixtures.Compiled proc = DlFixtures.compile(k, Set.of(), BlockingMode.CASE1_WEAK,
++        new ProceduralState(Set.of(), Set.of(piN1)), CueModel.NONE, n1, n2);
++    assertEquals("-∂", proc.usable(n1));
++    assertEquals("+∂", proc.usable(n2));
++    Set<Message> withN1 = Set.of(senc(pair(n1, n2), key), key, n1);
++    assertEquals("+∂", DlFixtures.compile(withN1, Set.of(), BlockingMode.CASE1_WEAK,
++        new ProceduralState(Set.of("sdec", "proj"), Set.of()), CueModel.NONE, n1).usable(n1),
++        "the direct derivation survives either lapse");
++  }
++
++  // ---------------- §7.5, Lemma 1 ----------------
++
++  @Test
++  @DisplayName("Lemma 1: one matching present cue per blocked hypothesis is necessary and sufficient")
++  void lemma1() {
++    Message x = a("x"), y = a("y");
++    Message t = pair(x, y);
++    Set<Message> k = Set.of(x, y);
++    Set<Message> f = Set.of(x, y);
++    Set<Association> assoc = Set.of(new Association("cx", x), new Association("cy", y));
++    Set<String> cues = Set.of("cx", "cy");
++    String none = DlFixtures.compile(k, f, BlockingMode.CASE1_WEAK, ProceduralState.EMPTY,
++        new CueModel(cues, assoc, Set.of()), t).usable(t);
++    String onlyX = DlFixtures.compile(k, f, BlockingMode.CASE1_WEAK, ProceduralState.EMPTY,
++        new CueModel(cues, assoc, Set.of("cx")), t).usable(t);
++    String both = DlFixtures.compile(k, f, BlockingMode.CASE1_WEAK, ProceduralState.EMPTY,
++        new CueModel(cues, assoc, cues), t).usable(t);
++    String crossed = DlFixtures.compile(k, f, BlockingMode.CASE1_WEAK, ProceduralState.EMPTY,
++        new CueModel(cues, Set.of(new Association("cx", x), new Association("cy", x)), cues), t)
++        .usable(t);
++    String procedural = DlFixtures.compile(k, f, BlockingMode.CASE1_WEAK,
++        new ProceduralState(Set.of("pair"), Set.of()), new CueModel(cues, assoc, cues), t).usable(t);
++    assertEquals(List.of("-∂", "-∂", "+∂", "-∂", "-∂"),
++        List.of(none, onlyX, both, crossed, procedural));
++  }
++
++  // ---------------- §7.8 expressiveness ----------------
++
++  @Test
++  @DisplayName("§7.8: a forgotten procedure is a state no Case-1 Forget set can represent")
++  void proceduralSeparation() {
++    Message c = senc(m1, m2);
++    Set<Message> k = Set.of(c, m2);
++    String pid = NormalDerivations.procedureId(
++        new NormalDerivations().enumerate(m1, k).derivations().get(0));
++    DlFixtures.Compiled dl = DlFixtures.compile(k, Set.of(), BlockingMode.CASE1_WEAK,
++        new ProceduralState(Set.of(), Set.of(pid)), CueModel.NONE, m1, c, m2);
++    List<String> target = List.of(dl.usable(m1), dl.usable(c), dl.usable(m2));
++    assertEquals(List.of("-∂", "+∂", "+∂"), target);
++    for (Set<Message> f : List.of(Set.<Message>of(), Set.of(c), Set.of(m2), Set.of(c, m2))) {
++      DlFixtures.Compiled fs = DlFixtures.compile(k, f, BlockingMode.CASE1_WEAK,
++          ProceduralState.EMPTY, CueModel.NONE, m1, c, m2);
++      assertFalse(target.equals(List.of(fs.usable(m1), fs.usable(c), fs.usable(m2))),
++          "Forget = " + f);
++    }
++  }
++
++  @Test
++  @DisplayName("§7.8: a cue restores accessibility while the lapse stays recorded")
++  void cueSeparation() {
++    Message mb = a("mbar");
++    ForgetDlResult r = engine.run(TransitionInput.builder(state(Set.of(mb), Set.of(mb),
++        ProceduralState.EMPTY)).send(mb).cues(cue("c", mb, true)).build());
++    assertEquals(Decision.PRESERVE, r.decision());
++    assertEquals(Set.of(mb), r.after().forget());
++    assertTrue(r.compiled().theory().facts().contains(ForgetDlCompiler.lapsedAtom(mb)));
++  }
++
++  // ---------------- §8.1 Bank Login extension, Table 3 ----------------
++
++  private Map<Message, String> bankLabels(Message... passwords) {
++    Map<Message, String> l = new LinkedHashMap<>();
++    l.put(h, "agentname");
++    l.put(nh, "nonce");
++    l.put(skH, "key");
++    for (Message p : passwords) {
++      l.put(p, "password");
++    }
++    return l;
++  }
++
++  @Test
++  @DisplayName("Table 3, no recovery: the credential is blocked and no replacement exists → Skip")
++  void table3NoRecovery() {
++    ForgetDlResult r = engine.run(TransitionInput.builder(state(bankK, Set.of(pw),
++        ProceduralState.EMPTY)).send(credential).labels(bankLabels(pw)).build());
++    assertEquals(Decision.SKIP, r.decision());
++    assertEquals("-∂", trace(r, credential).usableTag());
++  }
++
++  @Test
++  @DisplayName("Table 3, hint: cue reinstates PW; Forget and K unchanged; lapse returns without cue")
++  void table3Hint() {
++    Message hint = a("hintPW");
++    ForgetDlResult r = engine.run(TransitionInput.builder(state(bankK, Set.of(pw),
++            ProceduralState.EMPTY)).received(hint).send(credential).labels(bankLabels(pw))
++        .cues(cue("c_hint", pw, true)).build());
++    assertEquals(Decision.PRESERVE, r.decision());
++    assertEquals(Set.of(pw), r.after().forget(), "hint is not re-acquisition");
++    assertTrue(r.reacquired().isEmpty());
++    DerivationTrace d = trace(r, credential).derivations().get(0);
++    assertTrue(d.standing().isEmpty());
++    assertEquals(1, d.blockers().size());
++    assertTrue(d.blockers().get(0).overruledBy().get(0).startsWith("rho:"));
++
++    ForgetDlResult later = engine.run(TransitionInput.builder(r.after()).send(credential)
++        .labels(bankLabels(pw)).cues(cue("c_hint", pw, false)).build());
++    assertEquals(Decision.SKIP, later.decision(), "within-state recovery only");
++  }
++
++  @Test
++  @DisplayName("Table 3, reset: old credential stays blocked, fresh credential usable → Replace")
++  void table3Reset() {
++    Message pwNew = a("PWnew");
++    Message fresh = senc(pair(h, pwNew), pair(nh, nb));
++    ForgetDlResult r = engine.run(TransitionInput.builder(state(bankK, Set.of(pw),
++            ProceduralState.EMPTY)).received(pwNew).send(credential)
++        .labels(bankLabels(pw, pwNew)).build());
++    assertEquals(Decision.REPLACE, r.decision());
++    assertEquals(fresh, r.replacements().get(0).target());
++    assertEquals("-∂", trace(r, credential).usableTag());
++    assertEquals("+∂", trace(r, fresh).usableTag());
++    assertEquals(Set.of(pw), r.after().forget());
++  }
++
++  @Test
++  @DisplayName("§2.1 attack: forgetting PW1 with PW2 known triggers Replace with PW2")
++  void bankLoginAttack() {
++    Message pw1 = a("PW1"), pw2 = a("PW2");
++    Message intended = senc(pair(h, pw1), pair(nh, nb));
++    ForgetDlResult r = engine.run(TransitionInput.builder(HumanState.of(
++            Set.of(h, pw1, pw2, skH, nh))).received(challenge).forget(pw1).send(intended)
++        .labels(bankLabels(pw1, pw2)).build());
++    assertEquals(Decision.REPLACE, r.decision());
++    assertEquals(List.of(senc(pair(h, pw2), pair(nh, nb))),
++        r.replacements().stream().map(ForgetDlResult.Candidate::target).toList());
++    assertEquals(List.of(Map.of(pw1, pw2)), r.replacements().get(0).substitutions());
++  }
++
++  // ---------------- §8.2 Invoice-Payment, Table 4 ----------------
++
++  private final Message hh = a("H");
++  private final Message bank = a("B");
++  private final Message sup = a("S");
++  private final Message srv = a("srv");
++  private final Message amt = a("amt");
++  private final Message accS = a("AccS");
++  private final Message accAtt = a("AccAtt");
++  private final Message skHi = a("skH");
++  private final Message skB = a("skB");
++  private final Set<Message> invoiceK =
++      Set.of(hh, bank, sup, srv, amt, accS, accAtt, skHi, DlFixtures.pk(skB));
++
++  private Message order(Message acc) {
++    return aenc(sign(tuple(hh, bank, sup, srv, amt, acc), skHi), skB);
++  }
++
++  private Map<Message, String> invoiceLabels() {
++    Map<Message, String> l = new LinkedHashMap<>();
++    l.put(hh, "agentname");
++    l.put(bank, "agentname");
++    l.put(sup, "agentname");
++    l.put(srv, "service");
++    l.put(amt, "amount");
++    l.put(accS, "account");
++    l.put(accAtt, "account");
++    return l;
++  }
++
++  private ForgetDlResult invoice(ProceduralState p, boolean lapse, CueModel cues) {
++    TransitionInput.Builder b = TransitionInput.builder(new HumanState(invoiceK, Set.of(), p))
++        .send(order(accS)).labels(invoiceLabels()).cues(cues);
++    if (lapse) {
++      b.forget(accS);
++    }
++    return engine.run(b.build());
++  }
++
++  @Test
++  @DisplayName("Table 4: all four rows")
++  void table4() {
++    ForgetDlResult noLapse = invoice(ProceduralState.EMPTY, false, CueModel.NONE);
++    assertEquals(Decision.PRESERVE, noLapse.decision());
++    assertEquals(1, noLapse.candidates().size());
++
++    ForgetDlResult lapse = invoice(ProceduralState.EMPTY, true, CueModel.NONE);
++    assertEquals(Decision.REPLACE, lapse.decision());
++    assertEquals(order(accAtt), lapse.replacements().get(0).target());
++    assertEquals(2, lapse.candidates().size());
++
++    ForgetDlResult cued = invoice(ProceduralState.EMPTY, true, cue("cS", accS, true));
++    assertEquals(Decision.PRESERVE, cued.decision());
++    assertEquals("+∂", trace(cued, order(accAtt)).usableTag(), "usable but not emitted");
++    assertTrue(cued.replacements().isEmpty());
++
++    ForgetDlResult signLost = invoice(new ProceduralState(Set.of("sign"), Set.of()), true,
++        cue("cS", accS, true));
++    assertEquals(Decision.SKIP, signLost.decision());
++    assertEquals(2, signLost.candidates().size(), "same T: variant space depends on Forget only");
++  }
++
++  @Test
++  @DisplayName("§8.2 with the received reminder: several derivations, same decisions")
++  void invoiceWithReceivedReminder() {
++    Message reminder = tuple(sup, hh, srv, amt);
++    Set<Message> k = Set.of(hh, bank, sup, accS, accAtt, skHi, DlFixtures.pk(skB));
++    ForgetDlResult r = engine.run(TransitionInput.builder(HumanState.of(k)).received(reminder)
++        .forget(accS).send(order(accS)).labels(invoiceLabels()).build());
++    assertEquals(Decision.REPLACE, r.decision());
++    assertTrue(trace(r, order(accS)).derivations().size() > 1);
++    assertEquals(order(accAtt), r.replacements().get(0).target());
++  }
++}
+diff --git a/src/test/java/com/xmen/service/forget/dl/ForgetDlPropertiesTest.java b/src/test/java/com/xmen/service/forget/dl/ForgetDlPropertiesTest.java
+new file mode 100644
+index 0000000..ee95c17
+--- /dev/null
++++ b/src/test/java/com/xmen/service/forget/dl/ForgetDlPropertiesTest.java
+@@ -0,0 +1,206 @@
++package com.xmen.service.forget.dl;
++
++import static com.xmen.service.forget.dl.DlFixtures.a;
++import static com.xmen.service.forget.dl.DlFixtures.aenc;
++import static com.xmen.service.forget.dl.DlFixtures.pair;
++import static com.xmen.service.forget.dl.DlFixtures.senc;
++import static org.junit.jupiter.api.Assertions.assertEquals;
++import static org.junit.jupiter.api.Assertions.assertTrue;
++
++import com.xmen.model.Derivation;
++import com.xmen.model.Message;
++import com.xmen.service.forget.ForgetContext.BlockingMode;
++import com.xmen.service.forget.dl.ForgetDlModel.Association;
++import com.xmen.service.forget.dl.ForgetDlModel.CueModel;
++import com.xmen.service.forget.dl.ForgetDlModel.ProceduralState;
++import java.util.ArrayList;
++import java.util.LinkedHashSet;
++import java.util.List;
++import java.util.Random;
++import java.util.Set;
++import org.junit.jupiter.api.DisplayName;
++import org.junit.jupiter.api.Test;
++
++/**
++ * Seeded property tests over random scenarios. The oracle is the paper's template semantics
++ * (Lemma 1 generalised): Usable(t) iff some π ∈ Π_t has no lapsed rule, is not a forgotten
++ * procedure, and every blocked hypothesis has a present associated cue.
++ */
++@DisplayName("Properties (seeded random scenarios)")
++class ForgetDlPropertiesTest {
++
++  private static final int RUNS = 400;
++  private static final List<String> RULES = List.of("pair", "proj", "senc", "sdec", "aenc", "adec");
++
++  record Scenario(Set<Message> k, Set<Message> forget, BlockingMode mode,
++      ProceduralState proc, CueModel cues, List<Message> targets) {}
++
++  static Scenario random(Random r) {
++    List<Message> atoms = List.of(a("x0"), a("x1"), a("x2"), a("k0"), a("k1"), a("sk"));
++    Set<Message> k = new LinkedHashSet<>();
++    for (Message at : atoms) {
++      if (r.nextInt(3) > 0) {
++        k.add(at);
++      }
++    }
++    int extra = 1 + r.nextInt(3);
++    for (int i = 0; i < extra; i++) {
++      Message x = atoms.get(r.nextInt(3));
++      Message y = atoms.get(r.nextInt(atoms.size()));
++      switch (r.nextInt(3)) {
++        case 0 -> k.add(pair(x, y));
++        case 1 -> k.add(senc(x, atoms.get(3 + r.nextInt(2))));
++        default -> k.add(aenc(x, atoms.get(5)));
++      }
++    }
++    List<Message> kl = Terms.sorted(k);
++    Set<Message> forget = new LinkedHashSet<>();
++    for (Message m : kl) {
++      if (r.nextInt(3) == 0) {
++        forget.add(m);
++      }
++    }
++    BlockingMode mode = BlockingMode.values()[r.nextInt(3)];
++    List<Message> targets = new ArrayList<>(List.of(atoms.get(r.nextInt(3)),
++        pair(atoms.get(r.nextInt(3)), atoms.get(r.nextInt(3))),
++        senc(atoms.get(r.nextInt(3)), atoms.get(3))));
++    Set<String> rules = new LinkedHashSet<>();
++    for (String rule : RULES) {
++      if (r.nextInt(6) == 0) {
++        rules.add(rule);
++      }
++    }
++    Set<String> procs = new LinkedHashSet<>();
++    NormalDerivations nd = new NormalDerivations();
++    for (Message t : targets) {
++      for (Derivation d : nd.enumerate(t, k).derivations()) {
++        if (r.nextInt(5) == 0) {
++          procs.add(NormalDerivations.procedureId(d));
++        }
++      }
++    }
++    Set<String> cueIds = Set.of("c0", "c1", "c2");
++    Set<Association> assoc = new LinkedHashSet<>();
++    for (String c : cueIds) {
++      for (Message m : kl) {
++        if (r.nextInt(4) == 0) {
++          assoc.add(new Association(c, m));
++        }
++      }
++    }
++    Set<String> present = new LinkedHashSet<>();
++    for (String c : cueIds) {
++      if (r.nextBoolean()) {
++        present.add(c);
++      }
++    }
++    return new Scenario(k, forget, mode, new ProceduralState(rules, procs),
++        new CueModel(cueIds, assoc, present), targets);
++  }
++
++  private static boolean oracleVia(Derivation d, Scenario s, ForgetBlocking fb) {
++    if (NormalDerivations.rules(d).stream().anyMatch(s.proc().forgottenRules()::contains)) {
++      return false;
++    }
++    if (s.proc().forgottenProcedures().contains(NormalDerivations.procedureId(d))) {
++      return false;
++    }
++    for (Message h : fb.blocked(NormalDerivations.hypotheses(d))) {
++      boolean cued = s.cues().associations().stream()
++          .anyMatch(x -> x.message().equals(h) && s.cues().present().contains(x.cue()));
++      if (!cued) {
++        return false;
++      }
++    }
++    return true;
++  }
++
++  @Test
++  @DisplayName("DL tags equal the template oracle for every Via and Usable atom")
++  void dlMatchesTemplateOracle() {
++    Random r = new Random(20261002L);
++    int checked = 0;
++    for (int i = 0; i < RUNS; i++) {
++      Scenario s = random(r);
++      DlFixtures.Compiled c = DlFixtures.compile(s.k(), s.forget(), s.mode(), s.proc(), s.cues(),
++          s.targets().toArray(Message[]::new));
++      ForgetBlocking fb = new ForgetBlocking(s.forget(), s.mode(), Set.of());
++      for (Message t : new LinkedHashSet<>(s.targets())) {
++        boolean any = false;
++        List<ForgetDlCompiler.DerivationEntry> es = c.compiled().entries().get(t);
++        for (int j = 0; j < es.size(); j++) {
++          boolean expected = oracleVia(es.get(j).derivation(), s, fb);
++          any |= expected;
++          assertEquals(expected ? "+∂" : "-∂", c.via(t, j), "run " + i + " " + es.get(j));
++          checked++;
++        }
++        assertEquals(any ? "+∂" : "-∂", c.usable(t), "run " + i + " target " + t);
++      }
++    }
++    assertTrue(checked > RUNS, "non-trivial coverage: " + checked);
++  }
++
++  @Test
++  @DisplayName("without procedural lapses or cues, DL agrees with Algorithm 1 line 12")
++  void agreesWithAlgorithm1() {
++    Random r = new Random(7L);
++    for (int i = 0; i < RUNS; i++) {
++      Scenario s = random(r);
++      DlFixtures.Compiled c = DlFixtures.compile(s.k(), s.forget(), s.mode(),
++          ProceduralState.EMPTY, CueModel.NONE, s.targets().toArray(Message[]::new));
++      ForgetBlocking fb = new ForgetBlocking(s.forget(), s.mode(), Set.of());
++      NormalDerivations nd = new NormalDerivations();
++      for (Message t : new LinkedHashSet<>(s.targets())) {
++        boolean alg1 = nd.enumerate(t, s.k()).derivations().stream()
++            .anyMatch(d -> fb.blocked(NormalDerivations.hypotheses(d)).isEmpty());
++        assertEquals(alg1 ? "+∂" : "-∂", c.usable(t), "run " + i);
++      }
++    }
++  }
++
++  @Test
++  @DisplayName("§7.7: joint compilation over T gives the same tags as separate compilation")
++  void jointEqualsSeparate() {
++    Random r = new Random(11L);
++    for (int i = 0; i < RUNS; i++) {
++      Scenario s = random(r);
++      DlFixtures.Compiled joint = DlFixtures.compile(s.k(), s.forget(), s.mode(), s.proc(),
++          s.cues(), s.targets().toArray(Message[]::new));
++      for (Message t : new LinkedHashSet<>(s.targets())) {
++        DlFixtures.Compiled sep = DlFixtures.compile(s.k(), s.forget(), s.mode(), s.proc(),
++            s.cues(), t);
++        assertEquals(sep.usable(t), joint.usable(t), "run " + i);
++        for (int j = 0; j < sep.compiled().entries().get(t).size(); j++) {
++          assertEquals(sep.via(t, j), joint.via(t, j));
++        }
++      }
++    }
++  }
++
++  @Test
++  @DisplayName("§7.5: an irrelevant present cue is conservative for Via/Usable")
++  void irrelevantCueIsConservative() {
++    Random r = new Random(13L);
++    for (int i = 0; i < RUNS; i++) {
++      Scenario s = random(r);
++      DlFixtures.Compiled base = DlFixtures.compile(s.k(), s.forget(), s.mode(), s.proc(),
++          s.cues(), s.targets().toArray(Message[]::new));
++      Set<Message> lapsed = base.compiled().lapsedMessages();
++      Message unblocked = s.k().stream().filter(m -> !lapsed.contains(m)).findFirst().orElse(null);
++      if (unblocked == null) {
++        continue;
++      }
++      Set<String> cues = new LinkedHashSet<>(s.cues().cues());
++      cues.add("irrelevant");
++      Set<Association> assoc = new LinkedHashSet<>(s.cues().associations());
++      assoc.add(new Association("irrelevant", unblocked));
++      Set<String> present = new LinkedHashSet<>(s.cues().present());
++      present.add("irrelevant");
++      DlFixtures.Compiled more = DlFixtures.compile(s.k(), s.forget(), s.mode(), s.proc(),
++          new CueModel(cues, assoc, present), s.targets().toArray(Message[]::new));
++      for (Message t : new LinkedHashSet<>(s.targets())) {
++        assertEquals(base.usable(t), more.usable(t));
++      }
++    }
++  }
++}
+diff --git a/src/test/java/com/xmen/service/forget/dl/NormalDerivationsTest.java b/src/test/java/com/xmen/service/forget/dl/NormalDerivationsTest.java
+new file mode 100644
+index 0000000..bb03db2
+--- /dev/null
++++ b/src/test/java/com/xmen/service/forget/dl/NormalDerivationsTest.java
+@@ -0,0 +1,184 @@
++package com.xmen.service.forget.dl;
++
++import static com.xmen.service.forget.dl.DlFixtures.a;
++import static com.xmen.service.forget.dl.DlFixtures.aenc;
++import static com.xmen.service.forget.dl.DlFixtures.fn;
++import static com.xmen.service.forget.dl.DlFixtures.pair;
++import static com.xmen.service.forget.dl.DlFixtures.senc;
++import static org.junit.jupiter.api.Assertions.assertEquals;
++import static org.junit.jupiter.api.Assertions.assertFalse;
++import static org.junit.jupiter.api.Assertions.assertTrue;
++
++import com.xmen.model.Derivation;
++import com.xmen.model.Encrypt;
++import com.xmen.model.Message;
++import com.xmen.service.forget.dl.NormalDerivations.Coverage;
++import com.xmen.service.forget.dl.NormalDerivations.Result;
++import java.util.ArrayList;
++import java.util.LinkedHashSet;
++import java.util.List;
++import java.util.Set;
++import org.junit.jupiter.api.DisplayName;
++import org.junit.jupiter.api.Test;
++
++/** Normal-derivation enumeration (paper §3.2, Definition 7). */
++@DisplayName("Normal derivations")
++class NormalDerivationsTest {
++
++  private final NormalDerivations nd = new NormalDerivations();
++  private final Message m1 = a("m1");
++  private final Message m2 = a("m2");
++
++  private static Set<Message> k(Message... ms) {
++    return new LinkedHashSet<>(List.of(ms));
++  }
++
++  private static List<Set<Message>> hyps(Result r) {
++    List<Set<Message>> out = new ArrayList<>();
++    r.derivations().forEach(d -> out.add(NormalDerivations.hypotheses(d)));
++    return out;
++  }
++
++  @Test
++  @DisplayName("Example 4: direct use and decryption; decryption carries the ciphertext premise")
++  void example4() {
++    Message c = senc(m1, m2);
++    Result r = nd.enumerate(m1, k(m1, c, m2));
++    assertEquals(Coverage.COMPLETE, r.coverage());
++    assertEquals(2, r.derivations().size());
++    assertTrue(hyps(r).contains(Set.of(m1)));
++    assertTrue(hyps(r).contains(Set.of(c, m2)), "fixes host defect D1");
++  }
++
++  @Test
++  @DisplayName("legacy Encrypt terms are symmetric ciphertexts")
++  void legacyEncrypt() {
++    Message c = new Encrypt(m1, m2);
++    Result r = nd.enumerate(m1, k(c, m2));
++    assertEquals(List.of(Set.of(c, m2)), hyps(r));
++    assertEquals(Set.of("sdec"), NormalDerivations.rules(r.derivations().get(0)));
++  }
++
++  @Test
++  @DisplayName("Example 6/9: direct use and projection of the pair")
++  void example6() {
++    Message p = pair(m1, m2);
++    Result r = nd.enumerate(m1, k(p, m1, m2));
++    assertEquals(2, r.derivations().size());
++    assertTrue(hyps(r).contains(Set.of(p)));
++    assertTrue(hyps(r).contains(Set.of(m1)));
++  }
++
++  @Test
++  @DisplayName("Example 1: a forgotten message may occur in a derivation without being a hypothesis")
++  void example1() {
++    Message m = a("m");
++    Message mb = a("mbar");
++    assertEquals(List.of(Set.of(senc(m, mb), mb)), hyps(nd.enumerate(m, k(senc(m, mb), mb))));
++    Result r = nd.enumerate(m, k(senc(m, mb), senc(mb, m1), m1));
++    assertEquals(List.of(Set.of(senc(m, mb), senc(mb, m1), m1)), hyps(r));
++    assertFalse(hyps(r).get(0).contains(mb));
++  }
++
++  @Test
++  @DisplayName("Example 10: unique derivation adec;pair;senc although N_H is known")
++  void example10() {
++    Message h = a("H"), pw = a("PW"), sk = a("skH"), nh = a("NH"), nb = a("NB");
++    Message challenge = aenc(pair(nh, nb), sk);
++    Message m2 = senc(pair(h, pw), pair(nh, nb));
++    Result r = nd.enumerate(m2, k(h, pw, sk, nh, challenge));
++    assertEquals(Coverage.COMPLETE, r.coverage());
++    assertEquals(1, r.derivations().size());
++    Derivation pi = r.derivations().get(0);
++    assertEquals(Set.of("adec", "pair", "senc"), NormalDerivations.rules(pi));
++    assertEquals(Set.of(h, pw, sk, challenge), NormalDerivations.hypotheses(pi));
++  }
++
++  @Test
++  @DisplayName("§7.2: decrypt-and-project, plus the direct derivation when n1 is known")
++  void decryptAndProject() {
++    Message n1 = a("n1"), n2 = a("n2"), key = a("k");
++    Message c = senc(pair(n1, n2), key);
++    Result only = nd.enumerate(n1, k(c, key));
++    assertEquals(1, only.derivations().size());
++    assertEquals(Set.of("proj", "sdec"), NormalDerivations.rules(only.derivations().get(0)));
++    assertEquals(2, nd.enumerate(n1, k(c, key, n1)).derivations().size());
++  }
++
++  @Test
++  @DisplayName("asymmetric decryption needs the private key of pk(sk); other keys are opaque")
++  void asymmetric() {
++    Message sk = a("sk"), x = a("x");
++    assertEquals(1, nd.enumerate(x, k(aenc(x, sk), sk)).derivations().size());
++    assertEquals(0, nd.enumerate(x, k(aenc(x, sk), fn("pk", sk))).derivations().size());
++    assertEquals(0, nd.enumerate(x, k(fn("aenc", x, a("KB")), a("KB"))).derivations().size());
++  }
++
++  @Test
++  @DisplayName("public functions (incl. user-defined k/2) are composable; private ones are not")
++  void userDefinedAndPrivateFunctions() {
++    Message nh = a("nH"), nb = a("nB");
++    Message key = fn("k", nh, nb);
++    assertEquals(1, nd.enumerate(key, k(nh, nb)).derivations().size(), "contrast host defect D3");
++    NormalDerivations priv = new NormalDerivations(Set.of("k"), NormalDerivations.Limits.DEFAULT);
++    assertEquals(0, priv.enumerate(key, k(nh, nb)).derivations().size());
++  }
++
++  @Test
++  @DisplayName("finiteness: mutually encrypted keys terminate (the immediate-inverse rule alone does not)")
++  void finitenessCounterexample() {
++    Message x = a("a"), y = a("b");
++    Set<Message> kn = k(senc(x, y), senc(y, x), x);
++    Result rx = nd.enumerate(x, kn);
++    assertEquals(Coverage.COMPLETE, rx.coverage());
++    assertEquals(1, rx.derivations().size());
++    Result ry = nd.enumerate(y, kn);
++    assertEquals(1, ry.derivations().size());
++  }
++
++  @Test
++  @DisplayName("normality: no decomposition of a just-composed term")
++  void normality() {
++    Message p = pair(m1, m2);
++    Result r = nd.enumerate(m1, k(m2, senc(m1, m2)));
++    for (Derivation d : r.derivations()) {
++      assertFalse(NormalDerivations.canonicalTree(d).startsWith("sdec[m1](senc"), "senc then sdec");
++    }
++    assertEquals(0, nd.enumerate(m1, k(m2)).derivations().size());
++    assertEquals(1, nd.enumerate(p, k(m1, m2)).derivations().size());
++  }
++
++  @Test
++  @DisplayName("unsupported operators are reported, not silently ignored")
++  void unsupported() {
++    Result r = nd.enumerate(fn("xor", m1, m2), k(m1, m2));
++    assertEquals(Coverage.UNSUPPORTED, r.coverage());
++    assertEquals(Coverage.UNSUPPORTED, nd.enumerate(m1, k(fn("fst", pair(m1, m2)))).coverage());
++  }
++
++  @Test
++  @DisplayName("limits produce TRUNCATED with only valid derivations")
++  void truncation() {
++    Message t = pair(pair(m1, m2), pair(m1, m2));
++    Set<Message> kn = k(m1, m2, pair(m1, m2), pair(m2, m1));
++    NormalDerivations tiny = new NormalDerivations(Set.of(), new NormalDerivations.Limits(1, 1000));
++    Result r = tiny.enumerate(t, kn);
++    assertEquals(Coverage.TRUNCATED, r.coverage());
++    for (Derivation d : r.derivations()) {
++      assertTrue(kn.containsAll(NormalDerivations.hypotheses(d)));
++      assertEquals(t, d.getGoal());
++    }
++    assertEquals(Coverage.COMPLETE, nd.enumerate(t, kn).coverage());
++  }
++
++  @Test
++  @DisplayName("deterministic order and stable procedure ids across states")
++  void determinismAndStableIds() {
++    Message c = senc(m1, m2);
++    Result r1 = nd.enumerate(m1, k(m1, c, m2));
++    Result r2 = nd.enumerate(m1, k(m2, c, m1, a("unrelated")));
++    assertEquals(
++        r1.derivations().stream().map(NormalDerivations::procedureId).toList(),
++        r2.derivations().stream().map(NormalDerivations::procedureId).toList());
++  }
++}

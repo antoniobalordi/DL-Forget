@@ -1,0 +1,11 @@
+maude tool: '/private/tmp/xmen-dl-tools/maude/maude'
+ checking version: 3.5.1. OK.
+ checking installation: OK.
+[Theory Bank] Theory loaded
+[Theory Bank] Theory translated
+[Theory Bank] Derivation checks started
+[Theory Bank] Derivation checks ended
+[Theory Bank] Theory closed
+[Saturating Sources] Step 1 (Max 5)
+[Saturating Sources] Done
+EXIT 142

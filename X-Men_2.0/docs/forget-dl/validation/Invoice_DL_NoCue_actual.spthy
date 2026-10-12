@@ -1,0 +1,40 @@
+/* Minimal executable invoice decision fixture: public order fields, private signing key, two typed account candidates. */
+theory InvoiceDL
+begin
+builtins: asymmetric-encryption, signing
+/****RULES****/
+
+rule humansetup:
+[ Fr(~accS)
+, Fr(~accAtt)
+, Fr(~skH)
+, Fr(~skB)
+]
+--[ OnlyOnce()
+, IntendedAccount('H',~accS)
+]->
+[ !Type('H','account',~accS)
+, !Type('H','account',~accAtt)
+, State('H','1',<'H','B','S','service','amount',~accS,~accAtt,~skH,pk(~skB)>)
+]
+
+rule H1_M:
+[ State('H','1',<'H','B','S','service','amount',accS,accAtt,skH,pkB>)
+]
+--[ H()
+, Send('H','order',aenc(sign(<'H',<'B',<'S',<'service',<'amount',accAtt>>>>>,skH),pkB))
+]->
+[ Out(aenc(sign(<'H',<'B',<'S',<'service',<'amount',accAtt>>>>>,skH),pkB))
+]
+
+
+/****ENDOFRULES****/
+restriction OnlyOnce:
+ "All #i #j. OnlyOnce()@i & OnlyOnce()@j ==> #i = #j"
+lemma Functional: exists-trace
+ "Ex payload #i. Send('H','order',payload)@i"
+lemma Wrong_Account_Exists: exists-trace
+ "Ex desired actual skH skB #i #j. IntendedAccount('H',desired)@i & Send('H','order',aenc(sign(<'H','B','S','service','amount',actual>,skH),pk(skB)))@j & not (desired = actual)"
+lemma No_Wrong_Account:
+ "All desired actual skH skB #i #j. IntendedAccount('H',desired)@i & Send('H','order',aenc(sign(<'H','B','S','service','amount',actual>,skH),pk(skB)))@j ==> desired = actual"
+end

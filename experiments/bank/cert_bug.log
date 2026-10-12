@@ -1,0 +1,349 @@
+maude tool: '/private/tmp/xmen-dl-tools/maude/maude'
+ checking version: 3.5.1. OK.
+ checking installation: OK.
+[Theory Bank] Theory loaded
+[Theory Bank] Theory translated
+[Theory Bank] Derivation checks started
+[Theory Bank] Derivation checks ended
+[Theory Bank] Theory closed
+[Saturating Sources] Step 1 (Max 5)
+[Saturating Sources] Done
+theory Bank
+
+begin
+
+// Function signature and definition of the equational theory E
+
+functions: adec/2, aenc/2, fst/1, k/2, pair/2, pk/1, sdec/2, senc/2,
+           snd/1
+equations:
+    adec(aenc(x.1, pk(x.2)), x.2) = x.1,
+    fst(<x.1, x.2>) = x.1,
+    sdec(senc(x.1, x.2), x.2) = x.1,
+    snd(<x.1, x.2>) = x.2
+
+rule (modulo E) humansetup:
+   [
+   Fr( ~ltkH ), Fr( ~ltkB1 ), Fr( ~ltkB2 ), Fr( ~pw1 ), Fr( ~pw2 ),
+   Fr( ~nH )
+   ]
+  --[
+  OnlyOnce( ), Neq( $Human, $B1 ), Neq( $Human, $B2 ), Neq( $B1, $B2 ),
+  Neq( ~pw1, ~pw2 )
+  ]->
+   [
+   !Type( $Human, 'agentname', $Human ), !Type( $B1, 'agentname', $B1 ),
+   !Type( $B2, 'agentname', $B2 ), !Type( $Human, 'password', ~pw1 ),
+   !Type( $Human, 'password', ~pw2 ), !Type( $Human, 'nonce', ~nH ),
+   !Ltk( $Human, ~ltkH ), !Pk( $Human, pk(~ltkH) ), !Ltk( $B1, ~ltkB1 ),
+   !Pk( $B1, pk(~ltkB1) ), !Ltk( $B2, ~ltkB2 ), !Pk( $B2, pk(~ltkB2) ),
+   !Pw( $Human, $B1, ~pw1 ), !Pw( $Human, $B2, ~pw2 ),
+   !Accounts( $Human, $B1, $B2, ~pw1, ~pw2, ~nH ), Out( pk(~ltkH) ),
+   Out( pk(~ltkB1) ), Out( pk(~ltkB2) )
+   ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) Setup:
+   [
+   !Accounts( $Human, $B1, $B2, pw1, pw2, nH ), !Ltk( $Human, ltkH ),
+   !Ltk( $B1, ltkB1 ), !Ltk( $B2, ltkB2 )
+   ]
+  --[
+  Setup( $Human ), OnlyOnceSetup( ), Roles( $Human, $B1, $B2 ),
+  Target( $Human, $B1 )
+  ]->
+   [
+   State( $Human, '1', <$B1, $B2, nH, pw1, pw2, ltkH> ),
+   State( $B1, '1', <$Human, ltkB1> ), State( $B2, '1', <$Human, ltkB2> )
+   ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) Compromise:
+   [ !Ltk( $B, ltkB ) ] --[ RevLtk( $B ) ]-> [ Out( ltkB ) ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) H_1:
+   [ State( $Human, '1', <$B1, $B2, nH, pw1, pw2, ltkH> ), !Pk( $B1, pkB1 )
+   ]
+  --[
+  H( ), Send( $Human, 'm1', aenc(<$Human, $B1, nH>, pkB1) ), To( $B1 ),
+  U_LoginRequest( $Human, $B1, nH ), Uses( $Human, nH )
+  ]->
+   [
+   State( $Human, '2', <$B1, $B2, ltkH, nH, pkB1, pw1, pw2> ),
+   Out( aenc(<$Human, $B1, nH>, pkB1) )
+   ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) H_2_M:
+   [
+   State( $Human, '2', <$B1, $B2, ltkH, nH, pkB1, pw1, pw2> ),
+   In( aenc(<nH, nB>, pk(ltkH)) )
+   ]
+  --[
+  H( ), Receive( $Human, 'm2', <nH, nB> ),
+  Send( $Human, 'm3', senc(<$Human, pw2>, k(nH, nB)) ), To( $B1 ),
+  PasswordAttempt( $Human, $B1, pw2, nH, nB ), Forgot( $Human, pw1 ),
+  Uses( $Human, pw1 ), Uses( $Human, nH ), Uses( $Human, nB )
+  ]->
+   [
+   State( $Human, '3',
+          <$B1, $B2, aenc(<nH, nB>, pk(ltkH)), ltkH, nH, pkB1, pw1, pw2>
+   ),
+   Out( senc(<$Human, pw1>, k(nH, nB)) )
+   ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) H_3_Granted:
+   [
+   State( $Human, '3',
+          <$B1, $B2, aenc(<nH, nB>, pk(ltkH)), ltkH, nH, pkB1, pw1, pw2>
+   ),
+   In( 'Granted' )
+   ]
+  --[ H( ), Hfin( $Human, 'Granted' ), LoginSuccess( $Human, $B1 ) ]->
+   [ ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) H_3_Denied:
+   [
+   State( $Human, '3',
+          <$B1, $B2, aenc(<nH, nB>, pk(ltkH)), ltkH, nH, pkB1, pw1, pw2>
+   ),
+   In( 'Denied' )
+   ]
+  --[ H( ), Hfin( $Human, 'Denied' ), LoginFailed( $Human, $B1 ) ]->
+   [ ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) Bank_1:
+   [
+   State( $B, '1', <$Human, ltkB> ), !Pk( $Human, pkU ), Fr( ~nB ),
+   In( aenc(<$Human, $B, nH>, pk(ltkB)) )
+   ]
+  --[
+  B_Running( $B, $Human, nH, ~nB ), Receive( $B, 'm1', <$Human, $B, nH> )
+  ]->
+   [ State( $B, '2', <$Human, nH, ~nB> ), Out( aenc(<nH, ~nB>, pkU) ) ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) Bank_2_OK:
+   [
+   State( $B, '2', <$Human, nH, nB> ), !Pw( $Human, $B, pw ),
+   In( senc(<$Human, pw>, k(nH, nB)) )
+   ]
+  --[
+  LoginOK( $B, $Human, pw ), Receive( $B, 'm3', <$Human, pw> ),
+  Commit( $B, $Human, 'login' )
+  ]->
+   [ Out( 'Granted' ) ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) Bank_2_Fail:
+   [
+   State( $B, '2', <$Human, nH, nB> ), !Pw( $Human, $B, storedPw ),
+   In( senc(<$Human, pw>, k(nH, nB)) )
+   ]
+  --[ LoginFail( $B, $Human ), Neq( pw, storedPw ) ]->
+   [ Out( 'Denied' ) ]
+
+  /* has exactly the trivial AC variant */
+
+restriction OnlyOnce:
+  "∀ #i #j. ((OnlyOnce( ) @ #i) ∧ (OnlyOnce( ) @ #j)) ⇒ (#i = #j)"
+  // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i #j. ((OnlyOnce( ) @ #i) ∧ (OnlyOnce( ) @ #j)) ⇒ (#i = #j)"
+  */
+
+restriction OnlyOnceSetup:
+  "∀ #i #j.
+    ((OnlyOnceSetup( ) @ #i) ∧ (OnlyOnceSetup( ) @ #j)) ⇒ (#i = #j)"
+  // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i #j.
+    ((OnlyOnceSetup( ) @ #i) ∧ (OnlyOnceSetup( ) @ #j)) ⇒ (#i = #j)"
+  */
+
+restriction Inequality:
+  "∀ x #i. (Neq( x, x ) @ #i) ⇒ (⊥)"
+  // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #i. (Neq( x, x ) @ #i) ⇒ (⊥)"
+  */
+
+restriction notSameRole:
+  "∀ H B1 B2 #i.
+    (Roles( H, B1, B2 ) @ #i) ⇒ (((¬(H = B1)) ∧ (¬(H = B2))) ∧ (¬(B1 = B2)))"
+  // safety formula
+
+  /*
+  expanded formula:
+  "∀ H B1 B2 #i.
+    (Roles( H, B1, B2 ) @ #i) ⇒ (((¬(H = B1)) ∧ (¬(H = B2))) ∧ (¬(B1 = B2)))"
+  */
+
+lemma Auth_B2_requires_H_intent:
+  all-traces
+  "∀ u b2 pw #i.
+    (LoginOK( b2, u, pw ) @ #i) ⇒
+    (∃ nH #j. (U_LoginRequest( u, b2, nH ) @ #j) ∧ (#j < #i))"
+/*
+guarded formula characterizing all counter-examples:
+"∃ u b2 pw #i.
+  (LoginOK( b2, u, pw ) @ #i)
+ ∧
+  ∀ nH #j. (U_LoginRequest( u, b2, nH ) @ #j) ⇒ ¬(#j < #i)"
+*/
+by sorry
+
+lemma No_Reuse_Attack_Without_Compromise:
+  all-traces
+  "∀ u b1 b2 pw nH nB #i #j.
+    (((PasswordAttempt( u, b1, pw, nH, nB ) @ #i) ∧
+      (LoginOK( b2, u, pw ) @ #j)) ∧
+     (¬(b1 = b2))) ⇒
+    (∃ #k. RevLtk( b1 ) @ #k)"
+/*
+guarded formula characterizing all counter-examples:
+"∃ u b1 b2 pw nH nB #i #j.
+  (PasswordAttempt( u, b1, pw, nH, nB ) @ #i) ∧ (LoginOK( b2, u, pw ) @ #j)
+ ∧
+  (¬(b1 = b2)) ∧ (∀ #k. (RevLtk( b1 ) @ #k) ⇒ ⊥)"
+*/
+by sorry
+
+lemma Attack_Forget_Exists:
+  exists-trace
+  "∃ u b1 b2 pw nH nB #i #j #k.
+    (((PasswordAttempt( u, b1, pw, nH, nB ) @ #i) ∧
+      (LoginOK( b2, u, pw ) @ #j)) ∧
+     (RevLtk( b1 ) @ #k)) ∧
+    (¬(b1 = b2))"
+/*
+guarded formula characterizing all satisfying traces:
+"∃ u b1 b2 pw nH nB #i #j #k.
+  (PasswordAttempt( u, b1, pw, nH, nB ) @ #i) ∧
+  (LoginOK( b2, u, pw ) @ #j) ∧
+  (RevLtk( b1 ) @ #k)
+ ∧
+  ¬(b1 = b2)"
+*/
+by sorry
+
+lemma Password_Confidentiality:
+  all-traces
+  "∀ u b nH nB pw #i.
+    (PasswordAttempt( u, b, pw, nH, nB ) @ #i) ⇒ (¬(∃ #t. K( pw ) @ #t))"
+/*
+guarded formula characterizing all counter-examples:
+"∃ u b nH nB pw #i.
+  (PasswordAttempt( u, b, pw, nH, nB ) @ #i) ∧ ∃ #t. (K( pw ) @ #t)"
+*/
+by sorry
+
+lemma Functional:
+  exists-trace "∃ u b pw #i. LoginOK( b, u, pw ) @ #i"
+/*
+guarded formula characterizing all satisfying traces:
+"∃ u b pw #i. (LoginOK( b, u, pw ) @ #i)"
+*/
+by sorry
+
+lemma Forget_Attack_Only_B1_Compromised:
+  exists-trace
+  "∃ u b1 b2 pw nH nB #i #j #k.
+    (((((PasswordAttempt( u, b1, pw, nH, nB ) @ #i) ∧
+        (LoginOK( b2, u, pw ) @ #j)) ∧
+       (RevLtk( b1 ) @ #k)) ∧
+      (¬(b1 = b2))) ∧
+     (¬(∃ #l. RevLtk( u ) @ #l))) ∧
+    (¬(∃ #l. RevLtk( b2 ) @ #l))"
+/*
+guarded formula characterizing all satisfying traces:
+"∃ u b1 b2 pw nH nB #i #j #k.
+  (PasswordAttempt( u, b1, pw, nH, nB ) @ #i) ∧
+  (LoginOK( b2, u, pw ) @ #j) ∧
+  (RevLtk( b1 ) @ #k)
+ ∧
+  (¬(b1 = b2)) ∧
+  (∀ #l. (RevLtk( u ) @ #l) ⇒ ⊥) ∧
+  (∀ #l. (RevLtk( b2 ) @ #l) ⇒ ⊥)"
+*/
+by sorry
+
+lemma Certificate_No_Forgotten_Reuse:
+  all-traces
+  "∀ h x #i #j.
+    (((Forgot( h, x ) @ #i) ∧ (Uses( h, x ) @ #j)) ∧
+     ((#i < #j) ∨ (#i = #j))) ⇒
+    (⊥)"
+/*
+guarded formula characterizing all counter-examples:
+"∃ h x #i #j.
+  (Forgot( h, x ) @ #i) ∧ (Uses( h, x ) @ #j) ∧ ((#i < #j) ∨ (#i = #j))"
+*/
+simplify
+solve( (#i < #j)  ∥ (#i = #j) )
+  case case_2
+  solve( State( $Human, '2', <$B1, $B2, ltkH, nH, pkB1, x, pw2> ) ▶₀ #i )
+    case H_1
+    solve( Uses( $Human, ~pw1 ) @ #i )
+      case H_2_M
+      solve( !KU( aenc(<~nH, nB>, pk(~ltkH)) ) @ #vk )
+        case Bank_1_case_1
+        solve( !KU( aenc(<$Human, $B1, ~nH>, pk(~ltkB1)) ) @ #vk.1 )
+          case H_1
+          SOLVED // trace found
+        qed
+      qed
+    qed
+  qed
+qed
+
+/* All wellformedness checks were successful. */
+
+/*
+Generated from:
+Tamarin version 1.12.0
+Maude version 3.5.1
+Git revision: UNKNOWN, branch: UNKNOWN
+Compiled at: 2026-03-08 09:49:47.765662 UTC
+*/
+
+end
+
+==============================================================================
+summary of summaries:
+
+analyzed: cert_bug.spthy
+
+  processing time: 2.90s
+  
+  Auth_B2_requires_H_intent (all-traces): analysis incomplete (1 steps)
+  No_Reuse_Attack_Without_Compromise (all-traces): analysis incomplete (1 steps)
+  Attack_Forget_Exists (exists-trace): analysis incomplete (1 steps)
+  Password_Confidentiality (all-traces): analysis incomplete (1 steps)
+  Functional (exists-trace): analysis incomplete (1 steps)
+  Forget_Attack_Only_B1_Compromised (exists-trace): analysis incomplete (1 steps)
+  Certificate_No_Forgotten_Reuse (all-traces): falsified - found trace (7 steps)
+
+==============================================================================
+real 3.04
+user 4.40
+sys 0.09

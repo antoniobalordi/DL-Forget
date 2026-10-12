@@ -1,0 +1,7 @@
+[upstream] theories=600 literals=14034 mismatches=14 asp_inconsistent_literals=14 java_inconsistent_literals=0
+  MISMATCH ('compiled50', 'Usable(PA2:x1A2:x0)', '-D+d', '-D+d-d')
+  MISMATCH ('compiled50', 'Via(pi_d3c0b8dfbe8642b5,PA2:x1A2:x0)', '-D+d', '-D+d-d')
+  MISMATCH ('compiled50', 'Via(pi_fc4fcf50ef64b65a,PA2:x1A2:x0)', '-D+d', '-D+d-d')
+  MISMATCH ('compiled68', 'Via(pi_680d27a3d5d672f2,F4:senc2:A2:x1A2:k0)', '-D+d', '-D+d-d')
+  MISMATCH ('compiled68', 'Via(pi_d96639a62b034e76,A2:x1)', '-D+d', '-D+d-d')
+[patched] theories=600 literals=14034 mismatches=0 asp_inconsistent_literals=0 java_inconsistent_literals=0

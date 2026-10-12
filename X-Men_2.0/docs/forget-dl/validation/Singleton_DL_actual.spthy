@@ -1,0 +1,36 @@
+theory DlHost
+begin
+builtins: symmetric-encryption
+/****RULES****/
+
+rule H1:
+[ State('H','1',a)
+]
+--[ H()
+]->
+[ State('H','2',a)
+]
+
+rule H2:
+[ State('H','2',a)
+, Fr(~n)
+]
+--[ H()
+, Send('H','fresh',~n)
+]->
+[ State('H','3',<a,~n>)
+, Out(~n)
+]
+
+rule H3:
+[ State('H','3',<a,n>)
+]
+--[ H()
+, Send('H','later',n)
+]->
+[ Out(n)
+]
+
+
+/****ENDOFRULES****/
+end
