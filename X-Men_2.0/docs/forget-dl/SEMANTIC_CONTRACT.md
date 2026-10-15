@@ -32,10 +32,10 @@ Code: `com.xmen.service.forget.dl` (pure Java; depends only on the Lombok-free m
 | A2 | `format(atom) = "atom"`; otherwise top symbol/arity. | Def. 3 read literally (`f = m`) forbids the paper's own PW1→PW2 replacement. |
 | A3 | Enumerate a finite basis of derivation trees in which no decomposition consumes the output of its inverse composition **and no term repeats on a root-to-leaf branch**. Report cyclic decryption dependencies separately. When exact whole-procedure lapses coexist with such cycles, negative decisions have truncated coverage and return `UNKNOWN_COVERAGE`; a witnessed positive derivation can still preserve the send. | The finite basis is not all manuscript-normal trees: an omitted cyclic tree can be a distinct, unforgotten procedure. See E3 and the counterexample below. |
 | A4 | A blocked hypothesis without a label has `R = ∅`. | §3.3: labels exist to preserve type safety. |
-| A5 | `m̄′ ≠ m̄` in `R_m̄`. | Under Cases 2–3 the syntactic test admits m̄ itself, which would generate the mixed keep/replace variants §7.7 excludes. |
-| A6 | `f` is re-acquired iff `f = m1`, or some derivation of `f` from K′ has `m1` as a hypothesis, no blocked hypothesis, and no currently forgotten inference rule or exact procedure; iterate to a fixpoint. Never undo a declarative lapse of the same transition or use a receipt that was not retained. Explicit procedural relearning is applied before this derived recovery test. | Ex. 3 and §4.3 ("re-received or derivable from the received message"); unrestricted re-derivation would erase retrieval lapses, and procedural forgetting must also constrain the derivation used to recover a message. Direct receipt re-acquires the message independently of old inferential competence. |
-| A7 | Several lapse events at one transition are applied in sequence before the decision; explicit rule/procedure relearning is then applied to the resulting procedural state, including on Neglect transitions. | Host allows several lapse and recovery events per rule; Alg. 2 shows one ℓ. Recovery remains explicit and does not trigger declarative re-acquisition on an early-return branch. |
-| A8 | Literal Alg. 2: the Neglect `return` precedes line 13, so no re-acquisition at a Neglect transition. Explicit procedural relearning remains a state-update event even on this branch. The host separately certifies surviving operational checks and outputs before export. | See E7; supplemental host certification prevents rule pattern matching from bypassing the cognitive state. |
+| A5 | `m̄′ ≠ m̄` in `R_m̄`, and only uncued blocked hypotheses are replaced: a cued hypothesis is kept as itself. | Under Cases 2–3 the syntactic test admits m̄ itself. A cue gives access to its own message at this step, so the variant that keeps it and replaces the uncued hypotheses is the one the human can build; replacing it too would drop the variant entirely when its label is unique (review R3.1). T therefore depends on Forget and on the present cues. |
+| A6 | `f` is re-acquired iff `f = m1`, or some derivation of `f` in the finite basis from K′ has `m1` as a hypothesis, no blocked hypothesis, and no currently forgotten inference rule or exact procedure; iterate to a fixpoint. Never undo a declarative lapse of the same transition or use a receipt that was not retained. Explicit procedural relearning is applied before this derived recovery test. The search is incomplete (`UNKNOWN_COVERAGE`) if it is truncated, or if `f` has cyclic derivations while an exact procedure is forgotten. | Ex. 3 and §4.3 ("re-received or derivable from the received message"); unrestricted re-derivation would erase retrieval lapses, and procedural forgetting must also constrain the derivation used to recover a message. Direct receipt re-acquires the message independently of old inferential competence. |
+| A7 | Several lapse events at one transition are applied in sequence before the decision; explicit rule/procedure relearning is then applied to the resulting procedural state, including on Neglect transitions. | Host allows several lapse and recovery events per rule; Alg. 2 shows one ℓ. Declarative re-acquisition (A6) also runs on a Neglect transition. |
+| A8 | Re-acquisition (A6) runs first, also at a Neglect transition. Then an internal action is neglected if a message occurring in it is inaccessible: blocked by the resulting Forget set and not cued. Lapses of earlier transitions count; procedural lapses do not (a check that needs a lost skill fails host certification). The host separately certifies surviving operational checks and outputs before export. | See E7. Testing only the lapses of the current transition kept checks whose reference was forgotten earlier (review R2.1). Testing after re-acquisition keeps a check on a re-received message; in the host a value recovered from m1 is bound by the receive pattern, so its explicit check is redundant with the match (R2.2). With no earlier lapse, no cue and Case 1, the test equals the manuscript's. |
 | A9 | Host atoms are tilde-insensitive (`~pw1 ≡ pw1`). | Host `canonicalize` already does this. |
 | A10 | Public constants (`$X`, `'c'`) occurring in the intended send are available for derivation; they are not written back to host state. | Honest agents can always use public names; host K extraction omits them. |
 | A11 | Coverage policy: Preserve is justified by a witnessed surviving proof under truncated **target** enumeration; a negative intended target under truncation or omitted cyclic procedure proofs → `UNKNOWN_COVERAGE`. An unsuccessful re-acquisition search with truncation **or omitted cyclic receipt proofs** makes the successor state inconclusive, so all transition outcomes, including Preserve and No-Send, return `UNKNOWN_COVERAGE`. Replace under incomplete candidate/variant coverage is emitted and flagged `partial`; Skip only with complete coverage. Cartesian products are generated lazily and both candidate count and combination work are bounded. | §7.7 completeness is relative to T and Π. An uncertain persistent state must not cause a false decision at a later transition. Search limits must not become an unfounded negative proof or exhaust memory before a cap is checked. |
@@ -52,7 +52,7 @@ Code: `com.xmen.service.forget.dl` (pure Java; depends only on the Lombok-free m
 | E4 | §7.3, §7.6 | `ω > d_π` (and `ω^rule > d_π`) is inert in DL(∂): an applicable defeater already blocks +∂ unless a superior supporter applies. What matters is the absence of `d_π > ω` and the presence of `ρ > ω`. | Kept for fidelity; mutant M5 is equivalent. |
 | E5 | §8.2 | "single normal derivation π_S" holds only if srv/amt are not also obtainable from the received reminder ⟨S,H,srv,amt⟩. | Decisions unchanged; test `invoiceWithReceivedReminder`. |
 | E6 | §7.7 l.17 | Syntactic `m̄′ ∉ Forget` admits m̄ under Cases 2–3. | A5. |
-| E7 | Alg. 2 l.6 | Early return skips re-acquisition (l.13). | A8 (literal); alternative recorded. |
+| E7 | Alg. 2 l.6 | Early return skips re-acquisition (l.13), so a Neglect transition passed on a stale Forget set. | A8: re-acquisition first, then the Neglect test. |
 | E8 | Current Alg. 2, initial successor state | `Forget^{i+1} := Forget^i ∪ {m}` occurs before determining the lapse type; `m` is unbound for rule/procedure lapses. | Initialize from `Forget^i`; add the message in the message-lapse branch, including the just-received case. [Corrected companion](../../../7.DefeasibleLogic.corrected.tex); original attachment unchanged. |
 | — | p.26 | The "+∂ for both tags" typo reported in the supplied roadmap is **not** present in this revision. | none |
 
@@ -68,15 +68,18 @@ pair and can survive the exact procedure lapse. A nonrepeating basis omits it, s
 result cannot be called manuscript-complete. The engine now reports this uncertainty.
 
 Cycles can also change receipt provenance in A6. With old knowledge `{a, h(a)}`, forgotten
-`h(a)`, and receipt `senc(a,a)`, the normal tree
-`h(sdec(Initial[senc(a,a)], Initial[a]))` is an unblocked proof using the receipt, although the
-nonrepeating basis omits it. Therefore an unsuccessful cyclic re-acquisition search cannot
-certify the successor `Forget` set, even if a current send has another positive witness.
+`h(a)`, and receipt `senc(a,a)`, the normal tree `h(sdec(Initial[senc(a,a)], Initial[a]))` uses
+the receipt but lies outside the finite basis. A6 is defined on the finite basis, so it is no
+witness. Without forgotten procedures this loses nothing the receipt contributes: shortening such
+a witness gives a surviving derivation of `f` in the finite basis that, having no basis witness,
+does not use `m1`. With a forgotten procedure the shortened tree may be the forgotten one, so the
+search is reported incomplete, as for targets (A3).
 
-**Neglect boundary (A8).** The specified core early return removes an explicit internal action
-without running the usual send-decision branch at that transition. The host then certifies
-surviving operational operands and output payloads under the successor knowledge, lapses and
-current cues. A co-send that cannot be certified is rejected with HTTP 400. Supply
+**Neglect boundary (A8).** Re-acquisition runs first; the core then neglects every internal action
+in which an inaccessible message occurs, without running the usual send-decision branch at that
+transition. The host then certifies surviving operational operands and output payloads under the
+successor knowledge, lapses and current cues. A co-send that cannot be certified is rejected with
+HTTP 400, as is a remaining check whose operand needs a lost skill. Supply
 proof/instrumentation facts such as `PasswordAttempt` through `Witness-Actions` so they are not
 mistaken for an internal check. This guard and tested fixtures do not establish a universal
 theorem that Tamarin matching cannot reintroduce every forgotten value.

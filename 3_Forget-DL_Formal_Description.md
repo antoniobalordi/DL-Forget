@@ -339,18 +339,18 @@ In the host these are the annotation facts `Forget(m)`, `ForgetRule('r')`, `Forg
 
    (Erratum E8: the manuscript initialised $\mathit{Forget}^{i+1}$ with $m$ before testing whether the lapse is a message. The corrected order is used here.)
 3. **Explicit relearning.** $\bar R' := \bar R' \setminus \bar R_{\mathrm{rel}}$ and $\bar\Pi' := \bar\Pi' \setminus \bar\Pi_{\mathrm{rel}}$.
-4. **Neglect.** If a message forgotten in this transition occurs in $\mathit{Op}(\alpha)$ for an internal action $\alpha$, the decision is $\delta = \mathsf{Neglect}(\alpha)$ and the core returns (manuscript line 6). Steps 1–3 still apply; step 5 is skipped (A8, E7).
-5. **Re-acquisition (fixpoint).** A message $f \in \mathit{Forget}'$ that was not lapsed in this transition is removed from $\mathit{Forget}'$ in either of two cases:
+4. **Re-acquisition (fixpoint).** A message $f \in \mathit{Forget}'$ that was not lapsed in this transition is removed from $\mathit{Forget}'$ in either of two cases:
    - $f = m_1$ and $m_1$ is retained;
-   - there is a derivation $\pi$ of $f$ from $K'$ with $m_1 \in \mathit{Hyp}_\pi$, $\mathit{Blocked}(\mathit{Hyp}_\pi,\mathit{Forget}') = \emptyset$ and $\mathit{Blocked}_P(\pi) = \emptyset$ under $(\bar R',\bar\Pi')$.
+   - there is a derivation $\pi \in \mathcal B^*_f(K')$ with $m_1 \in \mathit{Hyp}_\pi$, $\mathit{Blocked}(\mathit{Hyp}_\pi,\mathit{Forget}') = \emptyset$ and $\mathit{Blocked}_P(\pi) = \emptyset$ under $(\bar R',\bar\Pi')$.
 
-   This is iterated to a fixpoint (A6). Recovery derivations obey the current procedural state: a forgotten competence cannot be used to re-acquire.
+   This is iterated to a fixpoint (A6). Recovery derivations obey the current procedural state: a forgotten competence cannot be used to re-acquire. Cues play no role. The step also runs on a transition that ends in Neglect. If the search for some $f$ is truncated, or $f$ has cyclic derivations while $\bar\Pi' \neq \emptyset$, the decision is $\mathsf{Unknown}$.
+5. **Neglect.** A message $s$ is *inaccessible* if $s \in \mathit{Blocked}(\{s\},\mathit{Forget}')$ for the $\mathit{Forget}'$ of step 4 and $s$ is not cued. If an inaccessible message occurs in $\mathit{Op}(\alpha)$ for an internal action $\alpha$, the decision is $\delta = \mathsf{Neglect}$ and the core returns the inaccessible messages; the host removes every internal action in which one occurs (manuscript line 6). Lapses of earlier transitions count. With no earlier lapse, no cue and Case 1, this is the test of the manuscript (A8, E7).
 
 The successor state is $\sigma_{i+1} = (K', \mathit{Forget}', (\bar R',\bar\Pi'), (\mathit{Cues}, \mathit{Assoc}', \mathit{Pres}^{i+1}))$.
 
 ### 6.3 Candidates and decision
 
-6. **Candidate targets.** $T := \{m_2\}$. For each $\pi \in \Pi_{m_2}$ and each $\bar m \in \mathit{Blocked}(\mathit{Hyp}_\pi, \mathit{Forget}')$, let
+6. **Candidate targets.** $T := \{m_2\}$. For each $\pi \in \Pi_{m_2}$ and each $\bar m \in \mathit{Rep}_\pi = \{h \in \mathit{Blocked}(\mathit{Hyp}_\pi, \mathit{Forget}') \mid h \text{ not cued}\}$, let
 
    $$
    R_{\bar m} = \{\bar m' \in K' \setminus \mathit{Forget}' \mid \bar m' \neq \bar m,\ \mathit{format}(\bar m') = \mathit{format}(\bar m),\ \lambda(\bar m') = \lambda(\bar m)\}.
@@ -365,7 +365,7 @@ The successor state is $\sigma_{i+1} = (K', \mathit{Forget}', (\bar R',\bar\Pi')
    If there is no $m_2$, then $\delta = \mathsf{NoSend}$.
 8. **Persist.** $\sigma_{i+1}$ becomes the predecessor state of the next transition of $H$. Later sends are re-evaluated under the persisting lapses even when they carry no annotation.
 
-The intended send is preferred: a usable $m_2$ is never replaced. Replacement is generated only for *declarative* blockers. Substituting a hypothesis never restores a forgotten competence, because candidates are themselves subject to the procedural defeaters. The decision is complete *relative to $T$*: variants that keep one cue-recovered hypothesis and replace another are not generated.
+The intended send is preferred: a usable $m_2$ is never replaced. Replacement is generated only for *declarative* blockers. Substituting a hypothesis never restores a forgotten competence, because candidates are themselves subject to the procedural defeaters. A cued hypothesis is kept, never replaced, so the variants keep every cue-recovered hypothesis and replace the others; $T$ therefore depends on $\mathit{Forget}'$ and on the cues present. The decision is complete *relative to $T$*.
 
 ### 6.4 Coverage and soundness of decisions
 

@@ -72,7 +72,7 @@ class ForgetDlEngineTest {
   }
 
   @Test
-  @DisplayName("Neglect retains explicit competence recovery while skipping declarative re-acquisition")
+  @DisplayName("Neglect retains explicit competence recovery and declarative re-acquisition")
   void neglectStillAppliesExplicitProceduralRecovery() {
     String procedure = "pi_0123456789abcdef";
     HumanState before = new HumanState(Set.of(pw1, pw2), Set.of(pw2),
@@ -84,8 +84,8 @@ class ForgetDlEngineTest {
     assertEquals(Decision.NEGLECT, r.decision());
     assertEquals(Set.of("sdec"), r.after().procedural().forgottenRules());
     assertTrue(r.after().procedural().forgottenProcedures().isEmpty());
-    assertEquals(Set.of(pw1, pw2), r.after().forget());
-    assertTrue(r.reacquired().isEmpty());
+    assertEquals(Set.of(pw1), r.after().forget(), "the re-received pw2 leaves Forget (A8)");
+    assertEquals(Set.of(pw2), r.reacquired());
   }
 
   @Test
@@ -327,16 +327,19 @@ class ForgetDlEngineTest {
   }
 
   @Test
-  void omittedCyclicReceiptProofCannotCertifyTheSuccessorState() {
+  void cyclicReceiptProofIsNoReacquisitionWitnessWithoutProcedureLapses() {
     Message x = a("x"), hashed = fn("h", x), receipt = senc(x, x);
     HumanState state = new HumanState(Set.of(x, hashed), Set.of(hashed),
         new ProceduralState(Set.of("h"), Set.of()));
-    assertEquals(Decision.UNKNOWN_COVERAGE, engine.run(TransitionInput.builder(state)
-        .received(receipt).send(hashed).build()).decision());
-    // Even a witnessed send or a transition without a send cannot certify the uncertain update.
-    assertEquals(Decision.UNKNOWN_COVERAGE, engine.run(TransitionInput.builder(state)
+    // A6 is defined on the finite basis: the cyclic proof h(sdec(senc(x,x),x)) is no witness,
+    // and with no forgotten procedure the search is complete, so the update is certain.
+    ForgetDlResult hashedSend = engine.run(TransitionInput.builder(state)
+        .received(receipt).send(hashed).build());
+    assertEquals(Decision.SKIP, hashedSend.decision(), "h(x) needs the lost rule h");
+    assertEquals(Set.of(hashed), hashedSend.after().forget());
+    assertEquals(Decision.PRESERVE, engine.run(TransitionInput.builder(state)
         .received(receipt).send(x).build()).decision());
-    assertEquals(Decision.UNKNOWN_COVERAGE, engine.run(TransitionInput.builder(state)
+    assertEquals(Decision.NO_SEND, engine.run(TransitionInput.builder(state)
         .received(receipt).build()).decision());
   }
 

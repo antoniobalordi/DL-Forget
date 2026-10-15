@@ -339,13 +339,19 @@ class ForgetDlPaperExamplesTest {
 
     ForgetDlResult cued = invoice(ProceduralState.EMPTY, true, cue("cS", accS, true));
     assertEquals(Decision.PRESERVE, cued.decision());
-    assertEquals("+∂", trace(cued, order(accAtt)).usableTag(), "usable but not emitted");
+    assertEquals(1, cued.candidates().size(), "the cued AccS is kept, not replaced (R3.1)");
     assertTrue(cued.replacements().isEmpty());
 
     ForgetDlResult signLost = invoice(new ProceduralState(Set.of("sign"), Set.of()), true,
         cue("cS", accS, true));
     assertEquals(Decision.SKIP, signLost.decision());
-    assertEquals(2, signLost.candidates().size(), "same T: variant space depends on Forget only");
+    assertEquals(1, signLost.candidates().size(), "T depends on Forget and on the cues present");
+
+    ForgetDlResult signLostNoCue = invoice(new ProceduralState(Set.of("sign"), Set.of()), true,
+        CueModel.NONE);
+    assertEquals(Decision.SKIP, signLostNoCue.decision());
+    assertEquals(2, signLostNoCue.candidates().size(), "without a cue the substitute is generated");
+    assertEquals("-∂", trace(signLostNoCue, order(accAtt)).usableTag(), "and blocked by the lost skill");
   }
 
   @Test

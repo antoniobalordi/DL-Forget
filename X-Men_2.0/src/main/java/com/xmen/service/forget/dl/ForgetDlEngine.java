@@ -150,25 +150,7 @@ public final class ForgetDlEngine {
     rules1.removeAll(in.relearnedRules());
     procs1.removeAll(in.relearnedProcedures());
 
-    // ---- Lines 5-6: Neglect with early return (A8: re-acquisition is not applied) ----
-    Set<Message> neglected = new LinkedHashSet<>();
-    for (LapseEvent e : in.lapses()) {
-      if (e instanceof MessageLapse ml) {
-        for (Message a : Terms.sorted(in.internalActionTerms())) {
-          if (Terms.occursIn(ml.message(), a)) {
-            neglected.add(ml.message());
-          }
-        }
-      }
-    }
-    if (!neglected.isEmpty()) {
-      HumanState after = new HumanState(k1, forget1, new ProceduralState(rules1, procs1));
-      return new ForgetDlResult(Status.OK, Decision.NEGLECT, List.copyOf(notes), after,
-          Set.of(), neglected, List.of(), List.of(), Coverage.COMPLETE, false, null, null,
-          List.of());
-    }
-
-    // ---- Line 13: re-acquisition (A6) ----
+    // ---- Line 13: re-acquisition (A6), before the Neglect test and also on a Neglect transition (A8) ----
     ProceduralState proc1 = new ProceduralState(rules1, procs1);
     Set<Message> reacquired = new LinkedHashSet<>();
     Set<Message> unresolvedReacquisition = new LinkedHashSet<>();
@@ -193,6 +175,26 @@ public final class ForgetDlEngine {
     }
     HumanState after = new HumanState(k1, forget1, proc1);
 
+    // ---- Lines 5-6: Neglect. A message occurring in an internal action is inaccessible if it is
+    // blocked by the forget set after re-acquisition and not cued (A8). Lapses of earlier
+    // transitions count; a message re-acquired from m1 does not. ----
+    Set<Message> cued = cuedMessages(in.cues());
+    ForgetBlocking blockingAfter = new ForgetBlocking(forget1, in.closure(), privateFunctions);
+    Set<Message> neglected = new LinkedHashSet<>();
+    for (Message a : Terms.sorted(in.internalActionTerms())) {
+      for (Message s : Terms.sorted(Terms.subterms(a))) {
+        if (blockingAfter.isBlocked(s) && !cued.contains(s)) {
+          neglected.add(s);
+        }
+      }
+    }
+    if (!neglected.isEmpty()) {
+      return new ForgetDlResult(Status.OK,
+          unresolvedReacquisition.isEmpty() ? Decision.NEGLECT : Decision.UNKNOWN_COVERAGE,
+          List.copyOf(notes), after, reacquired, neglected, List.of(), List.of(),
+          Coverage.COMPLETE, false, null, null, List.of());
+    }
+
     if (m2 == null) {
       return new ForgetDlResult(Status.OK,
           unresolvedReacquisition.isEmpty() ? Decision.NO_SEND : Decision.UNKNOWN_COVERAGE,
@@ -214,7 +216,9 @@ public final class ForgetDlEngine {
     int combinationsChecked = 0;
     outer:
     for (Derivation pi : r2.derivations()) {
+      // Rep_π: only uncued blocked hypotheses are replaced; a cued one is kept (R3.1).
       Set<Message> blocked = blocking.blocked(NormalDerivations.hypotheses(pi));
+      blocked.removeAll(cued);
       if (blocked.isEmpty()) {
         continue;
       }
@@ -391,12 +395,27 @@ public final class ForgetDlEngine {
         return true;
       }
     }
-    if (r.coverage() != Coverage.COMPLETE || r.cyclicDerivations()) {
+    // Re-acquisition is defined on the finite basis (A6). Without forgotten procedures, a witness
+    // outside it shortens to a surviving derivation of f without m1, so the receipt adds nothing;
+    // with forgotten procedures it may, and the search is incomplete (as decisionCoverage).
+    boolean cyclic = r.cyclicDerivations() && !procedural.forgottenProcedures().isEmpty();
+    if (r.coverage() != Coverage.COMPLETE || cyclic) {
       unresolved.add(f);
       notes.add("re-acquisition check for " + Terms.canonical(f) + " incomplete ("
-          + (r.cyclicDerivations() ? "cyclic receipt provenance" : r.coverage())
+          + (cyclic ? "cyclic receipt provenance under a procedure lapse" : r.coverage())
           + "); successor forgetting state is uncertain");
     }
     return false;
+  }
+
+  /** Messages associated with a cue present at this transition (cued<sub>σ</sub>, Def. 2). */
+  private static Set<Message> cuedMessages(ForgetDlModel.CueModel cues) {
+    Set<Message> out = new LinkedHashSet<>();
+    for (Association a : cues.associations()) {
+      if (cues.present().contains(a.cue())) {
+        out.add(a.message());
+      }
+    }
+    return out;
   }
 }
