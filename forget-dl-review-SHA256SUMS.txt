@@ -1,4 +1,0 @@
-53625c742cb619da60db49fad8feb15c32cf5b6efa4b4cec49e95640ee0fbe82  forget-dl-reviewed-d8c6404.patch
-88c64703186e61cdf5b541a6a3ca2a031e1a199e159e90730f4605c4e256a31a  forget-dl-review-fixes.patch
-75b72a41d198d26a44db21363b331e02ff30d3b74b3fc8d258816a9eaf04c903  REVIEW.md
-0bb7965fcb754c2b46448b92de67c5a93a20d63d73cfa84b1ec6b5868818edf8  7.DefeasibleLogic.corrected.tex
