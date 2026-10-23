@@ -1,0 +1,32 @@
+\section{Implementation in X-Men 2.0}
+\label{sec:implementation}
+
+The framework is implemented in \XMen~2.0~\SCP, which reads a Tamarin ceremony and writes mutated Tamarin theories. The new code is a pure-Java core of about 2.4\,kLOC with no dependency on the host framework, and a host integration selected per request (header \texttt{Forget-Semantics: DL}), so the published \forget{} path remains available unchanged. For each human transition, in the order of the human's rules, the host extracts the transition and its annotations; the core performs the state update, builds the candidates and their derivations, compiles and evaluates the theory, and returns the decision with its trace; the host rewrites and certifies the rule and passes the successor state to the next transition of the same human. \Cref{tab:mapping} maps formal constructs to code.
+
+\begin{table}[t]
+\centering\scriptsize
+\caption{Formal constructs and their implementation in the core (Java package \texttt{forget.dl}).}
+\label{tab:mapping}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{7.5cm}@{}}
+\toprule
+Construct & Implementation \\
+\midrule
+messages, format, substitution $m_2[C]$ & \texttt{Terms} (structural identities, substitution inside function arguments) \\
+$\Basis_t(K)$, $\Hyp_\pi$, $\Rules(\pi)$, derivation names & \texttt{NormalDerivations} (coverage flags; names are SHA-256 hashes of trees) \\
+$\Blocked$, Cases 1--3 & \texttt{ForgetBlocking} (analysis/synthesis saturation) \\
+$\sigma$, events, cue model & \texttt{ForgetDlModel} (typed records) \\
+$\compile$ (\cref{def:compile}) & \texttt{ForgetDlCompiler} \\
+DL($\partial$) & \texttt{DefeasibleTheory}, \texttt{AmbiguityBlockingReasoner} \\
+\cref{alg:decision}, coverage policy; cognitive trace & \texttt{ForgetDlEngine}; \texttt{ForgetDlResult} \\
+host: ordering, rewriting, certification & \texttt{ForgetDlBridge}, \texttt{ForgetMutationStrategy} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Reasoner.} The reasoner implements the proof conditions of DL($\partial$) with team defeat for arbitrary finite propositional theories, not only compiled ones. It computes the least fixpoint of the four tag sets by repeated passes over all literals; since the conditions are monotone in the tag sets, it derives exactly the conclusions with finite proofs, and literals on positive loops are left undecided, never treated as negative. On compiled theories the dependencies have depth three (facts, $\Via$, $\Usable$), so a constant number of passes suffices, each at most quadratic in $|\Dth|$. The linear bound for propositional DL~\cite{maher2001propositional} holds for a different algorithm and is not claimed here.
+
+\paragraph{Derivations and coverage.} The enumerator produces the finite basis of \cref{rem:finite}; every public function symbol is a constructor rule (in the running example, $\lbl{k}$). It stops at 512 derivations per target or 250{,}000 steps, and candidate generation at 256 candidates; reaching a limit marks the result as truncated, and pruned cyclic decryption dependencies are reported separately. The engine turns these flags into the outcomes of \cref{alg:decision}. Equational theories and destructor symbols inside terms are rejected as unsupported, never approximated.
+
+\paragraph{Host integration.} Lapses, relearning and cues are annotation facts on the human's rules (\texttt{Forget}, \texttt{ForgetRule}, \texttt{ForgetProcedure}, \texttt{RelearnRule}, \texttt{RelearnProcedure}, \texttt{Cue}, \texttt{AssociateCue}, \texttt{PresentCue}); type labels come from \texttt{!Type} facts. The host orders each human's rules along one acyclic \texttt{State} chain (alternative terminal rules allowed) and carries the cognitive state across transitions, so later sends are re-evaluated under persisting lapses even without annotations. \preserve{} strips the annotations, \replace{} produces one rule per substitute (rebinding directed receives where needed), \skipm{} removes the send and \neglect{} the internal action. Because Tamarin can bind a forgotten value through any surviving premise or conclusion, the host then checks on the symbolic terms that every remaining check operand, output fact and co-sent payload is usable in the successor state, and rejects the input otherwise. Inputs outside the supported fragment are rejected.
+
+\paragraph{What is and is not implemented.} Implemented: declarative, rule-level and derivation-level lapses; relearning; cue models with per-transition presence; the trace; coverage-aware decisions; certification of surviving uses. Not implemented: cues that depend on attacker input, recovery of skills by cues, the adversarial cues of \cref{sec:discussion}, a proof that emitted theories respect the decision, and the decision procedure of \cref{thm:poly}, which exists as a separate prototype.

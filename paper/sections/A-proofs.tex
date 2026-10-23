@@ -1,0 +1,90 @@
+\section{Proofs}
+\label{app:proofs}
+
+Throughout, $\Dth=\compile(\sigma,T,\Pi)$ and every $\pi\in\Pi_t$ is a derivation of $t$ from $K$, so $\Hyp_\pi\subseteq K$. We call \emph{fact atoms} the atoms $\Known(\cdot)$, $\Lapsed(\cdot)$ and $\ContextCue(\cdot,\cdot)$.
+
+\begin{lemma}[Fact layer]\label{lem:facts}
+For every fact atom $a$: if $a\in F$ then $\pD a$ and $\pd a$; otherwise $\mD a$ and $\md a$. Every literal $\neg a$ has $\mD$ and $\md$.
+\end{lemma}
+\begin{proof}
+No rule has a fact atom or its complement as head. If $a\in F$, $\pD a$ holds by definition and implies $\pd a$. If $a\notin F$, $\mD a$ holds because $R_s[a]=\varnothing$ makes its universal condition vacuous, and $\md a$ holds by the first disjunct (every supporter discarded), vacuously since $\Rsd[a]=\varnothing$. No negative literal is a fact, so the same argument applies to $\neg a$.\qed
+\end{proof}
+
+\begin{proof}[of \cref{thm:char}]
+Fix $t\in T$, $\pi\in\Pi_t$ and $q=\Via(\pi,t)$. Neither $q$ nor $\neg q$ is a fact or the head of a strict rule, so $\mD q$ and $\mD\neg q$; all rules for $\neg q$ are defeaters, so $\Rsd[\neg q]=\varnothing$ and $\md\neg q$. The supporters of $q$ are $d_\pi$ and the reinstaters $\rho_{\pi,h,c}$; by \cref{lem:facts} and $\Hyp_\pi\subseteq K$, $d_\pi$ is applicable. The attackers are the defeaters of $\pi$, and by \cref{lem:facts}:
+(a)~$\omega_{\pi,h}$ is applicable iff $h\in L$; for $h\in\Hyp_\pi$ this holds iff $h\in\Blocked(\Hyp_\pi,\Forget)$, because blocking is pointwise;
+(b)~$\omega^{\mathit{rule}}_{\pi,r}$ is applicable iff $r\in\Rbar$; (c)~$\omega^{\mathit{proc}}_\pi$ is applicable iff $\pi\in\Pibar$; and every non-applicable attacker is discarded.
+(d)~$\rho_{\pi,h,c}$ is applicable iff $c\in\Pres$ and $(c,h)\in\Assoc$, since $h\in\Blocked(\Hyp_\pi,\Forget)\subseteq L$.
+The only superiority pairs from a supporter of $q$ to an attacker of $q$ are $\rho_{\pi,h,c}>\omega_{\pi,h}$; the pairs $\omega>d_\pi$ have a defeater on the left.
+
+($\Leftarrow$) If $\surv_\sigma(\pi)$, every applicable attacker is some $\omega_{\pi,h}$ with $h$ blocked, and $h$ is cued, so an applicable $\rho_{\pi,h,c}>\omega_{\pi,h}$ exists. Together with the applicable $d_\pi$ and $\mD\neg q$, this gives $\pd q$.
+($\Rightarrow$) If $\surv_\sigma(\pi)$ fails, either a procedural attacker is applicable, and no rule is superior to it, or $\omega_{\pi,h}$ is applicable for a blocked uncued $h$, and every rule superior to it, a reinstater $\rho_{\pi,h,c}$, is discarded. In both cases an applicable attacker $s$ is neither discarded nor overruled, so the third condition of $\pd q$ fails, and the third disjunct of $\md q$ holds; with $\mD q$ we obtain $\md q$.
+
+For $\Usable(t)$: $\neg\Usable(t)$ has no rules and is not a fact, so $\mD\neg\Usable(t)$ and the attack condition of $\pd\Usable(t)$ is vacuous. The supporters of $\Usable(t)$ are the strict rules $r^{\mathit{use}}_\pi$, $\pi\in\Pi_t$, whose bodies have $\mD$, so $\mD\Usable(t)$. Hence $\pd\Usable(t)$ iff some $\Via(\pi,t)$ has $\pd$, and $\md\Usable(t)$ iff all have $\md$, which by the first part are $\Usab{\Pi}{\sigma}(t)$ and its negation. If $\Pi_t=\varnothing$, $\md\Usable(t)$ holds vacuously.\qed
+\end{proof}
+
+\begin{proof}[of \cref{cor:recovery}]
+Immediate from \cref{thm:char} with $\BlockedP(\pi)=\varnothing$.\qed
+\end{proof}
+
+\begin{proof}[of \cref{prop:mono}]
+(a) By \cref{thm:char}, the tags of $\Via(\pi,t)$ and $\Usable(t)$ depend only on $\sigma$, $\pi$ and $\Pi_t$; $T$ does not occur in $\surv_\sigma$ (by pointwise blocking, $h\in L$ iff $h$ is blocked, whatever the other targets). (b) Each conjunct of $\surv_\sigma$ is monotone in the stated direction: $\cued_\sigma(h)$ is non-decreasing in $\Pres$ and $\Assoc$; $\BlockedP(\pi)$ is non-decreasing in $\Rbar$ and $\Pibar$; and $\Blocked(X,\Forget)$ is non-decreasing in $\Forget$ for every closure case, since closing a larger set yields a larger set.\qed
+\end{proof}
+
+\begin{proof}[of \cref{prop:priorities}]
+The proof of \cref{thm:char} consults only superiority pairs whose left element supports $\Via(\pi,t)$; defeaters never do, and $\Rsd[\neg\Via(\pi,t)]=\varnothing$, so the pairs $\omega>d_\pi$ are never used. Fact atoms and $\Usable$ atoms have no attackers. Without the pairs $\rho>\omega$, no applicable attacker of $\Via(\pi,t)$ can be overruled, so $\pd\Via(\pi,t)$ iff no attacker is applicable, i.e.\ $\BlockedP(\pi)=\varnothing$ and $\Blocked(\Hyp_\pi,\Forget)=\varnothing$; otherwise an attacker stands and $\md$ follows.\qed
+\end{proof}
+
+\begin{proof}[of \cref{prop:team}]
+\Cref{lem:facts} holds for $\partial^*$ with the same proof. Let $q=\Via(\pi,t)$ and $B=\Blocked(\Hyp_\pi,\Forget)$. By the definition of $\partial^*$ (\cref{app:variants}), $+\partial^* q$ iff some applicable supporter is superior to every applicable attacker. By (a)--(d) above, the applicable attackers are $\omega_{\pi,h}$ for $h\in B$ and the applicable procedural defeaters; $d_\pi$ is superior to none, and $\rho_{\pi,h,c}$ is superior exactly to $\omega_{\pi,h}$. So a single applicable supporter beats all applicable attackers iff there are none (take $d_\pi$), or the only one is $\omega_{\pi,h}$ and some $\rho_{\pi,h,c}$ is applicable, i.e.\ $h$ is cued. This is the stated condition. Otherwise every applicable supporter faces an applicable attacker it is not superior to, which is the strong negation, $-\partial^* q$. $\Usable$ is as in \cref{thm:char}. Comparing with \cref{thm:char}, the conditions differ exactly when $\BlockedP(\pi)=\varnothing$, $|B|\geq2$ and all of $B$ is cued.\qed
+\end{proof}
+
+\begin{proof}[of \cref{prop:ambiguity}]
+For a fact atom $a$, no rule mentions $a$ or $\neg a$ as head, so (definitions in \cref{app:variants}) $+\delta a$, $+\!\int a$ and $\pd a$ all coincide with $a\in F$, and $-\delta a$, $-\!\int a$ and $\md a$ with $a\notin F$; likewise for $\neg a$. Let $q=\Via(\pi,t)$. All supporters and attackers of $q$ have bodies of fact atoms. In the conditions for $+\delta q$, replace $+\delta a$ by $\pd a$ and $-\!\int a$ by $\md a$ for these body literals: the result is literally the condition for $\pd q$. The same substitution, with $+\!\int a$ replaced by $\pd a$ and $-\delta a$ by $\md a$, turns the condition for $-\delta q$ into that for $\md q$; and $\pD\neg q$ is false in both. $\neg q$ has no supporters, so $-\delta\neg q$ and $\md\neg q$. $\Usable(t)$ has strict supporters with bodies $\Via(\pi,t)$ and no attackers, so $+\delta\Usable(t)$ iff some $+\delta\Via(\pi,t)$, and $-\delta\Usable(t)$ iff all $-\delta\Via(\pi,t)$, as for $\partial$; $\neg\Usable(t)$ has no rules. These are all the literals of $\Dth$.\qed
+\end{proof}
+
+The support relation $\int$ is not determined by $\partial$: for a derivation with a blocked, uncued hypothesis and no reinstater, the applicable $\omega>d_\pi$ yields $-\!\int\Via(\pi,t)$; without the pair, $+\!\int\Via(\pi,t)$. In compiled theories $\Via$ and $\Usable$ never occur in the body of an attacker, so this has no effect on the tags.
+
+\begin{proof}[of \cref{prop:conservative}]
+Both algorithms are evaluated on the same derivation sets, formats (the format of an atom is the class of atoms) and labels. (a) With $\Rbar=\Pibar=\varnothing$ there are no procedural blockers, and with $\Pres=\varnothing$ no hypothesis is cued, so $\surv_\sigma(\pi)$ iff $\Blocked(\Hyp_\pi,\Forget)=\varnothing$. By \cref{thm:char}, $\pd\Usable(m_2)$ iff the test of the published algorithm holds on $\Pi_{m_2}$. (b) \Cref{alg:decision} builds, for each $\pi\in\Pi_{m_2}$, the combinations $C\in\prod_h R'_h$ with $R'_h=R_h\setminus\{h\}$, where $R_h$ is the replacement set of the published algorithm, and skips $\pi$ if some $R'_h$ is empty. The published algorithm builds $C\in\prod_h R_h$ and skips $\pi$ if some $R_h$ is empty. If $R'_h=\varnothing\neq R_h$, then $R_h=\{h\}$ and every combination of the published algorithm for $\pi$ replaces $h$ by itself. So the combinations of \cref{alg:decision} are exactly the combinations of the published algorithm without self-replacement. \Cref{alg:decision} discards $m_2[C]=m_2$ and keeps $m_2[C]$ iff $\pd\Usable(m_2[C])$, which by (a) holds iff $m_2[C]$ has a derivation without blocked hypotheses. This assumes the candidate limit is not reached; otherwise the result is flagged partial.\qed
+\end{proof}
+
+\begin{proof}[of \cref{prop:separation}]
+(a) Every normal derivation of $m_1$ from $K$ must decrypt $\senc{m_1}{m_2}$, and $m_2$ is available only as a leaf, so $\pi$ is the unique normal derivation of $m_1$; it is forgotten, so $m_1$ is unusable. The direct derivations of $\senc{m_1}{m_2}$ and $m_2$ are not forgotten and have no blocked hypotheses. For a state $(K,\Forget',(\varnothing,\varnothing),\varnothing)$: if neither hypothesis of $\pi$ is in $\Forget'$, $\pi$ survives and $m_1$ is usable. Otherwise some $x\in\{\senc{m_1}{m_2},m_2\}$ is in $\Forget'$; every derivation of $x$ from $K$ has $x$ among its hypotheses ($m_2$ cannot be obtained by decryption from $K$, and building $\senc{m_1}{m_2}$ needs $m_1$, which needs $\senc{m_1}{m_2}$ as a hypothesis), so $x$ is unusable.
+(b) Take $K=\{h\}$, $\Forget=\{h\}$, $\Assoc=\{(c,h)\}$, with $c$ present at transition $j$ and absent at $j+1$. The only normal derivation of $h$ is the leaf $h$, blocked; by \cref{thm:char}, $h$ is usable at $j$ (cued) and unusable at $j+1$. Under~\SCP{} usability is a function of $(K,\Forget)$ and the closure case; with no lapse, receipt or re-acquisition between the transitions, both are unchanged, so the two transitions cannot differ.\qed
+\end{proof}
+
+\begin{proof}[of \cref{prop:bounded}]
+(a) $\Basis\subseteq\Norm$ and survival is a property of the single derivation.
+(b) ($\Rightarrow$) by inclusion. ($\Leftarrow$) Let $\pi\in\Norm_t(K)$ survive. Apply the following reductions while possible: (i) if a message $u$ occurs twice on a root-to-leaf path, replace the subtree at the upper occurrence by the subtree at the lower one; (ii) if a node applies a destructor to the conclusion of its inverse constructor, or a constructor to the conclusions of its inverse destructor applied to one term, replace the node by the subtree whose conclusion it recomputes (in the free algebra $\mathsf{sdec}(\senc{m}{k},k)$ recomputes $m$, $\mathsf{senc}(\mathsf{sdec}(c,k),k)$ recomputes $c$, $\pair{\mathsf{proj}_1(x)}{\mathsf{proj}_2(x)}$ recomputes $x$, and similarly for $\mathsf{aenc}$). Each step deletes nodes, so the process terminates; it preserves the conclusion $t$. The result $\pi'$ lies in $\Basis^*_t(K)$ with $\Hyp_{\pi'}\subseteq\Hyp_\pi$ and $\Rules(\pi')\subseteq\Rules(\pi)$. By pointwise blocking, $\Blocked(\Hyp_{\pi'},\Forget)\subseteq\Blocked(\Hyp_\pi,\Forget)$, all cued; $\Rules(\pi')\cap\Rbar=\varnothing$; and $\Pibar=\varnothing$. So $\pi'$ survives.\qed
+\end{proof}
+
+\begin{proof}[of \cref{thm:poly}]
+($\Rightarrow$) Let $\pi\in\Norm_t(K)$ survive. Each leaf $h$ is either not blocked or blocked and cued, so $h\in\Kacc$, and $\Rules(\pi)\cap\Rbar=\varnothing$: $\pi$ is a derivation of $t$ from $\Kacc$ with rules in $\RR\setminus\Rbar$.
+($\Leftarrow$) Let $\pi$ be any derivation of $t$ from $\Kacc$ with rules in $\RR\setminus\Rbar$. The reductions in the proof of \cref{prop:bounded}(b) apply to arbitrary derivations and only delete nodes, so they yield a normal derivation $\pi'$ of $t$ from $\Kacc\subseteq K$ whose leaves are in $\Kacc$ and whose rules avoid $\Rbar$. Its blocked hypotheses are cued and $\Pibar=\varnothing$, so $\pi'$ survives.
+\emph{Decision.} In a normal derivation over the free algebra, the principal premise of a destructor has top symbol $\langle\cdot,\cdot\rangle$, $\mathsf{senc}$ or $\mathsf{aenc}$; it cannot be produced by the matching constructor, so it is a leaf or the conclusion of a destructor. Hence every destructor conclusion belongs to the least set $A\supseteq\Kacc$ closed under the available destructors whose principal premise is in $A$ and whose key premise is synthesisable from $A$ with the available constructors, and $t$ is derivable iff it is synthesisable from $A$. $A$ is contained in the subterms of $K$, so it is computed in at most as many rounds as there are subterms, each round doing polynomially many synthesis checks, each a recursion over the subterms of one term~\cite{rusinowitch2003protocol}. $\Kacc$ requires the blocking test, which for Cases~2--3 is the same saturation applied to $\Forget$.\qed
+\end{proof}
+
+\paragraph{The decision layer of \cref{sec:discussion}.}
+Let $\Dth'$ extend $\Dth$ with $s_t:\Usable(t)\defeas\Send(t)$ for $t\in T$ and $p_{t'}:\Usable(m_2)\defeas\neg\Send(t')$, $p_{t'}>s_{t'}$, for $t'\neq m_2$.
+
+\begin{proposition}[Conservativity of the decision layer]\label{prop:layer}
+Without adversarial cues, $\pd\Send(m_2)$ iff $\pd\Usable(m_2)$; for $t'\neq m_2$, $\pd\Send(t')$ iff $\md\Usable(m_2)$ and $\pd\Usable(t')$; every $\Send$ literal is decided. Hence the $\Send$ tags encode the decision of \cref{alg:decision} under complete coverage.
+\end{proposition}
+\begin{proof}
+The new rules have heads that occur in no old body, so old tags are unchanged. $\Send(m_2)$ has the single supporter $s_{m_2}$ and no attacker. For $t'\neq m_2$, $\Send(t')$ has supporter $s_{t'}$ and attacker $p_{t'}>s_{t'}$. If $\pd\Usable(m_2)$, $p_{t'}$ is applicable and not overruled, so $\md\Send(t')$. If $\md\Usable(m_2)$, $p_{t'}$ is discarded and $\Send(t')$ takes the tag of $\Usable(t')$, which is decided by \cref{thm:char}.\qed
+\end{proof}
+
+\begin{proposition}[Trusted-cue precedence]\label{prop:precedence}
+In the extended theory of \cref{sec:discussion} under $\partial$, assume that for every present $(c_a,h)\in\Int$ there is $c\in\Pres$ with $(c,h)\in\Assoc$ and $c\succ c_a$. Then every $\Via(\pi,t)$ and $\Usable(t)$ atom of $\Dth$ has the same tag in the extended theory as in $\Dth$.
+\end{proposition}
+\begin{proof}
+The extension adds facts $\AdvCue(c_a,h)$, facts $\ContextCue(c,h)$ for present cues associated with interfered hypotheses, interference rules $\iota$ (applicable) and reinstaters for interfered hypotheses. If $\pd\Via(\pi,t)$ in $\Dth$, the original attackers are overruled as before, and each $\iota_{\pi,h,c_a}$ is overruled by the applicable $\rho_{\pi,h,c}$ with $c\succ c_a$, so $\pd\Via(\pi,t)$ still holds (team defeat). If $\md\Via(\pi,t)$ in $\Dth$, some original attacker stands: a procedural defeater, to which no rule is superior, or $\omega_{\pi,h}$ for a blocked uncued $h$; uncued means that no genuine cue associated with $h$ is present, so every reinstater for $h$, old or new, is discarded, and the attacker still stands. $\Usable$ atoms follow as in \cref{thm:char}, since the extension adds no rule for $\Usable$ or $\neg\Usable$.\qed
+\end{proof}
+
+\begin{proposition}[Non-monotonicity]\label{prop:nonmono}
+In the extended theory, usability is not monotone in the cues present.
+\end{proposition}
+\begin{proof}
+Situations A0 and A1 of \cref{tab:adversarial}. Without lapses and cues, $\pd\Usable(\mthree)$ holds. Adding the present adversarial cue with $(\mathit{banner},\pwa)\in\Int$ makes $\iota_{\pi,\pwa,\mathit{banner}}$ applicable for both derivations; the only applicable supporter $d_\pi$ is not superior to it, so $\md\Via(\pi,\mthree)$ and $\md\Usable(\mthree)$.\qed
+\end{proof}

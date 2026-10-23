@@ -1,0 +1,83 @@
+\section{Formal Properties and Reasoning Analysis}
+\label{sec:properties}
+
+Throughout, $\Dth=\compile(\sigma,T,\Pi)$ with every $\pi\in\Pi_t$ a derivation from $K$. Full proofs are in \cref{app:proofs}.
+
+\subsection{What the compiled theories conclude}
+
+\begin{definition}[Survival]\label{def:surv}
+A derivation $\pi$ \emph{survives} in $\sigma$, written $\surv_\sigma(\pi)$, if $\BlockedP(\pi)=\varnothing$ and every $h\in\Blocked(\Hyp_\pi,\Forget)$ is cued. For a set $X_t$ of derivations of $t$, $\Usab{X}{\sigma}(t)$ holds if some $\pi\in X_t$ survives.
+\end{definition}
+
+\begin{theorem}[Characterisation]\label{thm:char}
+For every $t\in T$ and $\pi\in\Pi_t$: $\Dth\vdash\pd\Via(\pi,t)$ iff $\surv_\sigma(\pi)$, and $\Dth\vdash\md\Via(\pi,t)$ otherwise; $\Dth\vdash\pd\Usable(t)$ iff $\Usab{\Pi}{\sigma}(t)$, and $\Dth\vdash\md\Usable(t)$ otherwise. In particular, every $\Via$ and $\Usable$ atom receives exactly one of $\pd$, $\md$, and $\Pi_t=\varnothing$ gives $\md\Usable(t)$.
+\end{theorem}
+
+\begin{proof}[sketch]
+Facts are decided outright: $\pd$ if present and $\md$ otherwise, because no rule has a fact atom as head. The supporters of $\Via(\pi,t)$ are $d_\pi$, always applicable, and the reinstaters; its attackers are the defeaters of $\pi$, applicable exactly when their lapse fact is present. The only superiority pairs from a supporter to an attacker are $\rho_{\pi,h,c}>\omega_{\pi,h}$. Hence every applicable attacker is overruled iff no procedural defeater applies and every blocked hypothesis has an applicable reinstater, which is $\surv_\sigma(\pi)$; otherwise some attacker stands and $\md$ follows. $\Usable(t)$ has only strict supporters and no attackers.
+\end{proof}
+
+\Cref{thm:char} answers (Q1): on its own theories, defeasible provability coincides with a closed-form survival predicate. This does not make the logic dispensable. The predicate is a consequence of the semantics, not part of the definition; it depends on proof-theoretic choices identified in \cref{sec:choices}; it delimits the fragment that \cref{sec:discussion} leaves; and it makes the implementation checkable (\cref{sec:evaluation}).
+
+\begin{corollary}[Per-hypothesis recovery]\label{cor:recovery}
+If $\BlockedP(\pi)=\varnothing$, then $\pd\Via(\pi,t)$ iff every blocked hypothesis of $\pi$ is cued; a cue associated with another hypothesis does not help.
+\end{corollary}
+
+\begin{proposition}[Modularity and monotonicity]\label{prop:mono}
+(a) The tags of $\Via(\pi,t)$ and $\Usable(t)$ are the same in $\compile(\sigma,T,\Pi)$ and $\compile(\sigma,T',\Pi)$ for every $T'\subseteq T$ with $t\in T'$. (b) $\Usab{X}{\sigma}(t)$ is non-decreasing in $\Pres$ and $\Assoc$ and non-increasing in $\Rbar$, $\Pibar$ and $\Forget$.
+\end{proposition}
+
+Modularity justifies compiling one theory for all candidates. By monotonicity, showing more cues never makes a usable message unusable: in this framework a cue alone cannot redirect a send.
+
+\subsection{Which proof-theoretic choices matter}
+\label{sec:choices}
+
+\begin{proposition}[Priorities]\label{prop:priorities}
+Removing the pairs $\omega>d_\pi$ from $>$ changes no $\pm\partial$ tag. Removing the pairs $\rho_{\pi,h,c}>\omega_{\pi,h}$ makes $\pd\Via(\pi,t)$ equivalent to $\BlockedP(\pi)=\varnothing\wedge\Blocked(\Hyp_\pi,\Forget)=\varnothing$.
+\end{proposition}
+
+An applicable defeater already prevents $\pd$ of an unopposed supporter; what matters is that $d_\pi>\omega$ is absent and $\rho>\omega$ is present.
+
+\begin{proposition}[Team defeat is necessary]\label{prop:team}
+Let $\partial^{*}$ be ambiguity-blocking DL with individual defeat, in which a single supporter must be superior to every applicable attacker. Then $\Dth\vdash+\partial^{*}\Via(\pi,t)$ iff $\BlockedP(\pi)=\varnothing$ and $\pi$ has at most one blocked hypothesis, which is cued. Hence $\partial$ and $\partial^{*}$ differ on $\Via(\pi,t)$ exactly when $\pi$ has no procedural blocker and at least two blocked hypotheses, all cued.
+\end{proposition}
+
+\begin{proposition}[The ambiguity regime is irrelevant]\label{prop:ambiguity}
+Let $\delta$ be ambiguity-propagating DL with team defeat and support $\int$~\cite{antoniou2000flexible}. For every literal $q$ of $\Dth$: $\Dth\vdash+\delta q$ iff $\Dth\vdash\pd q$, and $\Dth\vdash-\delta q$ iff $\Dth\vdash\md q$.
+\end{proposition}
+
+Together, \cref{prop:team,prop:ambiguity} answer (Q2). Per-hypothesis recovery (\cref{cor:recovery}), the commitment that each blocked value needs its own cue, is delivered by team defeat; under individual defeat a derivation with two forgotten values could never be recovered (S10 would become \skipm). Ambiguity handling has no effect, because every attacker in a compiled theory has a body of facts, so no conclusion is ambiguous. The support relation $\int$ does differ (with $\omega>d_\pi$, a lapsed, uncued derivation is not even supported), which becomes relevant in \cref{sec:discussion}.
+
+\subsection{Relation to the published semantics}
+
+\begin{proposition}[Conservative extension]\label{prop:conservative}
+Let $\Rbar=\Pibar=\varnothing$ and $\Pres=\varnothing$, and evaluate \cref{alg:decision} and the published algorithm on the same derivation sets. (a) $\Usab{X}{\sigma}(t)$ holds iff some $\pi\in X_t$ has $\Blocked(\Hyp_\pi,\Forget)=\varnothing$, i.e.\ the test of~\cite[Def.~4]{sandu2026formal}; so both preserve the send in the same states. (b) If the send is not preserved, \cref{alg:decision} emits exactly the variants of the published algorithm that replace every blocked hypothesis by a different message, differ from $m_2$, and have a derivation without blocked hypotheses.
+\end{proposition}
+
+Differences with~\SCP{} in the absence of skills and cues are thus limited to substitutes that the published algorithm emits although the human cannot build them, or that coincide with the intended message. Conversely, the framework distinguishes states that the \Forget{} set cannot:
+
+\begin{proposition}[Separation]\label{prop:separation}
+Fix Case~1. (a) Let $K=\{\senc{m_1}{m_2},m_2\}$, $\pi$ the decryption of $m_1$, and $\sigma=(K,\varnothing,(\varnothing,\{\pi\}),\varnothing)$. Then $m_1$ is unusable while $\senc{m_1}{m_2}$ and $m_2$ are usable, and no state $(K,\Forget',(\varnothing,\varnothing),\varnothing)$ gives the same usability on these three messages. (b) With $h\in\Forget$ and $(c,h)\in\Assoc$, if $c$ is present at one transition and absent at the next, with no other event in between, $h$ is usable at the first and unusable at the second; usability under~\SCP{} is a function of $(K,\Forget)$, which does not change.
+\end{proposition}
+
+\subsection{Bounded enumeration and efficient decisions}
+\label{sec:bounded}
+The implementation enumerates a subset $\Basis_t(K)\subseteq\Basis^*_t(K)$ of the finite basis and stops at fixed limits. Decisions must remain correct with respect to all normal derivations $\Norm_t(K)$.
+
+\begin{proposition}[Bounded enumeration]\label{prop:bounded}
+(a) $\Usab{\Basis}{\sigma}(t)\Rightarrow\Usab{\Norm}{\sigma}(t)$ for every truncation $\Basis\subseteq\Norm$. (b) If $\Pibar=\varnothing$, then $\Usab{\Basis^*}{\sigma}(t)\iff\Usab{\Norm}{\sigma}(t)$.
+\end{proposition}
+
+Part (b) follows by shortening a surviving derivation: removing repeated messages on a path and immediate constructor/destructor pairs only deletes nodes, so hypotheses, blocked hypotheses and rules can only shrink. With $\Pibar\neq\varnothing$ the argument fails, since the shortened derivation may be exactly the forgotten one: for $K=\{\senc{a}{b},\senc{b}{a},a\}$ and $\Pibar=\{\text{the leaf } a\}$, a cyclic derivation of $a$ survives outside $\Basis^*_a(K)$. Accordingly, \cref{alg:decision} preserves a send whenever it has found a surviving derivation (part (a)), and returns \unknowncov{} instead of a negative decision whenever the search was cut off, or forgotten derivations coexist with cyclic decryption dependencies. Completeness in the presence of forgotten derivations remains open (\cref{sec:discussion}).
+
+When no exact derivation is forgotten, usability does not need derivations at all. Let $\Kacc(\sigma)=\{h\in K\mid h\notin\Blocked(\{h\},\Forget)\text{ or }\cued_\sigma(h)\}$ be the \emph{accessible knowledge}.
+
+\begin{theorem}[Usability as restricted derivability]\label{thm:poly}
+If $\Pibar=\varnothing$, then $\Usab{\Norm}{\sigma}(t)$ holds iff $t$ is derivable from $\Kacc(\sigma)$ using only the rules in $\RR\setminus\Rbar$. Consequently, usability is decidable in time polynomial in the number of subterms of $K\cup\{t\}$.
+\end{theorem}
+
+\begin{proof}[sketch]
+($\Rightarrow$) A surviving derivation has its leaves in $\Kacc$ and no forgotten rule. ($\Leftarrow$) Shorten any such derivation as in \cref{prop:bounded}(b); its leaves stay in $\Kacc$, so its blocked hypotheses are cued, and it uses no forgotten rule. Derivability with a restricted rule set is decided by the usual saturation: close $\Kacc$ under the available destructors whose key is derivable, then check $t$ by available constructors; all terms stay among the subterms of $K\cup\{t\}$~\cite{rusinowitch2003protocol}.
+\end{proof}
+
+\Cref{thm:poly}, derived from \cref{thm:char} and \cref{prop:bounded}, answers the efficiency part of (Q4): the enumeration in \cref{alg:decision}, exponential in the worst case, is needed for candidates, explanations and forgotten derivations, but not to decide usability otherwise. We implemented it as a prototype outside the tool (\cref{sec:evaluation}).

@@ -1,0 +1,9 @@
+preserve.spthy | Forget_Attack_Only_B1_Compromised: no verdict (exit 127, wall limit 300s) | 0.0 s
+preserve.spthy | Credential_Sent: no verdict (exit 127, wall limit 300s) | 0.0 s
+preserve.spthy | Functional: no verdict (exit 127, wall limit 300s) | 0.0 s
+replace.spthy | Forget_Attack_Only_B1_Compromised: no verdict (exit 127, wall limit 300s) | 0.0 s
+replace.spthy | Credential_Sent: no verdict (exit 127, wall limit 300s) | 0.0 s
+replace.spthy | Functional: no verdict (exit 127, wall limit 300s) | 0.0 s
+skip.spthy | Forget_Attack_Only_B1_Compromised: no verdict (exit 127, wall limit 300s) | 0.0 s
+skip.spthy | Credential_Sent: no verdict (exit 127, wall limit 300s) | 0.0 s
+skip.spthy | Functional: no verdict (exit 127, wall limit 300s) | 0.0 s

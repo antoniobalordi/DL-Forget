@@ -1,0 +1,17 @@
+\section{Variants of the Proof Theory}
+\label{app:variants}
+
+All variants share the definite layer: $\pD q$ iff $q\in F$ or some $r\in R_s[q]$ has $\pD a$ for all $a\in A(r)$; $\mD q$ iff $q\notin F$ and every $r\in R_s[q]$ has some $a\in A(r)$ with $\mD a$.
+
+\paragraph{DL($\partial$), team defeat (used by the tool).} $\pd q$ is given in \cref{sec:background}. Its strong negation is: $\md q$ iff $\mD q$ and (i)~every $r\in\Rsd[q]$ has some $\md a$, or (ii)~$\pD{\sim}q$, or (iii)~some $s\in R[{\sim}q]$ has $\pd a$ for all $a\in A(s)$ and every $t\in\Rsd[q]$ has some $\md a$ or $t\not>s$~\cite{antoniou2001representation}.
+
+\paragraph{DL($\partial^*$), individual defeat.} $+\partial^* q$ iff $\pD q$, or $\mD{\sim}q$ and some $r\in\Rsd[q]$ with $+\partial^*a$ for all $a\in A(r)$ satisfies, for every $s\in R[{\sim}q]$: $s$ has some $-\partial^*a$, or $r>s$. $-\partial^*q$ iff $\mD q$ and ($\pD{\sim}q$, or every $r\in\Rsd[q]$ has some $-\partial^* a$ or faces some $s\in R[{\sim}q]$ with $+\partial^* a$ for all $a\in A(s)$ and $r\not>s$)~\cite{billington1993defeasible}.
+
+\paragraph{DL($\delta$), ambiguity propagation.} Following~\cite{antoniou2000flexible}, with support $\int$:
+$+\!\int q$ iff $\pD q$ or some $r\in\Rsd[q]$ has $+\!\int a$ for all $a\in A(r)$ and every $s\in R[{\sim}q]$ has some $-\delta a$ or $s\not>r$;
+$-\!\int q$ iff $\mD q$ and every $r\in\Rsd[q]$ has some $-\!\int a$ or faces some $s\in R[{\sim}q]$ with $+\delta a$ for all $a\in A(s)$ and $s>r$;
+$+\delta q$ iff $\pD q$, or some $r\in\Rsd[q]$ has $+\delta a$ for all $a\in A(r)$, $\mD{\sim}q$, and every $s\in R[{\sim}q]$ has some $-\!\int a$ or is overruled by some $t\in\Rsd[q]$ with $+\delta a$ for all $a\in A(t)$ and $t>s$;
+$-\delta q$ iff $\mD q$ and (every $r\in\Rsd[q]$ has some $-\delta a$, or $\pD{\sim}q$, or some $s\in R[{\sim}q]$ has $+\!\int a$ for all $a\in A(s)$ and every $t\in\Rsd[q]$ has some $-\delta a$ or $t\not>s$).
+On the standard example $r_1: r\defeas p$, $r_2: s\defeas\neg p$, $r_3: p\defeas q$, $r_4:\ \defeas\neg q$, $r_3>r_4$, with facts $r,s$, our prototype gives $\pd\neg q$ under $\partial$ and $-\delta q$, $-\delta\neg q$ under $\delta$, as expected~\cite{antoniou2000flexible}.
+
+All three are implemented as least fixpoints of their (monotone) conditions; the individual-defeat and propagating reasoners are research prototypes outside the tool. On 3{,}000 random theories with conflicting defeasible rules they differ from DL($\partial$) on 3 and 43 of 29{,}834 literals respectively, confirming that they are distinct logics outside the compiled fragment.

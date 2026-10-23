@@ -1,0 +1,104 @@
+\section{Experimental Evaluation}
+\label{sec:evaluation}
+
+We address five questions. \textbf{RQ1} Does the implementation agree with the semantics of \cref{sec:framework,sec:properties}? \textbf{RQ2} Which reasoning capabilities does the framework add, and how is each realised? \textbf{RQ3} Where does it decide differently from~\SCP, and why? \textbf{RQ4} How does it scale? \textbf{RQ5} Do the new decisions change verification outcomes? All runs used OpenJDK~21, Tamarin~1.12.0 and Maude~3.5.1 on a 2-vCPU Xeon (2.1\,GHz) container; scripts, models and logs are in the artifact (\cref{app:artifact}).
+
+\paragraph{RQ1: semantic correctness.}
+(i)~The 96 unit, example and property tests of the core pass. (ii)~We compared the reasoner with an independent ASP encoding of ambiguity-blocking DL($\partial$)~\cite{governatori2026ddl} run with clingo, on three seeds of 600 theories each: 400 random theories with conflicting rules and 200 theories compiled from random \forget{} states, 42{,}004 tagged literals in total. After fixing one defect in the encoding (below), the two agree on every tag. (iii)~We checked \cref{thm:char}, \cref{prop:team} and \cref{prop:ambiguity} on 10{,}000 theories compiled from random states (all three closure cases, random procedural lapses and cues; 495{,}760 literals, 41{,}133 $\Via$ and 30{,}000 $\Usable$ atoms), using research implementations of individual defeat and ambiguity propagation (\cref{app:variants}): there were no violations; individual defeat changed exactly the 411 predicted $\Via$ tags (and 183 $\Usable$ tags), and ambiguity propagation changed none. (iv)~\Cref{prop:conservative} held on all 5{,}000 transitions of the RQ3 study, and the prototype of \cref{thm:poly} agreed with the tool on all 30{,}000 targets of random states without forgotten derivations.
+
+The upstream encoding loses the binding of the attacker between two auxiliary predicates, so under team defeat it can derive both $\pd q$ and $\md q$. It did so for 30 literals, all in 13 \emph{compiled} theories and none in the random ones: several reinstaters each overruling a different defeater is exactly the shape that exercises team defeat.
+
+\paragraph{RQ2: reasoning capabilities.}
+\Cref{tab:capabilities} lists the capabilities the framework adds over~\SCP, the element of the formalisation that realises each, and the evidence. All seven are implemented; each is exercised by the running example (\cref{tab:running}), whose decisions and traces were produced by the tool.
+
+\begin{table}[t]
+\centering\scriptsize
+\caption{Capabilities added over~\SCP, their mechanism and evidence. Scenarios refer to \cref{tab:running}.}
+\label{tab:capabilities}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.7cm}>{\raggedright\arraybackslash}p{3.6cm}>{\raggedright\arraybackslash}p{1.1cm}>{\raggedright\arraybackslash}p{3.9cm}@{}}
+\toprule
+Capability & Mechanism & Example & Formal and experimental evidence \\
+\midrule
+possession $\neq$ usability & $\Known$ facts vs.\ $\Usable$ via surviving $\Via$ & S1 & \cref{thm:char}; RQ1 \\
+lapse as defeat, not negation & defeaters $\omega$; $\md\Via$ without $\pd\neg\Via$ & S1 & \cref{thm:char}; reasoner conformance tests \\
+lost skill vs.\ lost derivation & $\omega^{\mathit{rule}}$ on all derivations using $r$; $\omega^{\mathit{proc}}$ on one & S3, S4, S6 & \cref{prop:separation}(a); RQ3 \\
+cue-triggered recall, lapse kept & reinstater $\rho>\omega$; $\Pres$ per transition & S2 & \cref{cor:recovery}, \cref{prop:separation}(b); RQ3, RQ5 \\
+recovery from several lapses & team defeat over reinstaters & S10 & \cref{prop:team}; RQ1(iii) \\
+per-derivation conclusions & $\Via(\pi,t)$ indexed by derivation & S8 & \cref{thm:char}; \cref{tab:running} \\
+admissible substitutes, explanations & $\pd\Usable(t)$ for variants; tagged proof & S3 & \cref{prop:conservative}(b); RQ3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{RQ3: comparison with the published semantics.}
+We generated 5{,}000 random transitions (random knowledge over pairs and encryptions, forgotten sets, closure case, labels, intended message) and decided each with the tool and with a reference implementation of the published algorithm run on the same derivations, blocking function, formats and labels, so that differences come from the semantics, not from the legacy derivation code. \Cref{tab:rq3} summarises the outcome. Without skills and cues (\emph{classical}), both preserve in exactly the same 2{,}184 cases, as \cref{prop:conservative} predicts; the 220 differences are substitutes emitted by the published algorithm that are either the intended message itself (197) or not buildable by the human (23). With random lost skills and cues (\emph{full}), 1{,}077 decisions differ: 350 sends are preserved by a cue where the published algorithm replaces or skips, 532 are blocked by a lost skill where the published algorithm preserves, and 195 differ in the admissible substitutes. In the full configuration, replacing the reasoner by its individual-defeat variant changes 40 decisions, the ambiguity-propagating variant none.
+
+\begin{table}[t]
+\centering\scriptsize
+\caption{Decisions of this paper (rows) against the published algorithm~\SCP{} (columns) on 5{,}000 random transitions, without (classical) and with (full) lost skills and cues. Diagonal \replace{} cells include different substitute sets.}
+\label{tab:rq3}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lrrrcrrr@{}}
+\toprule
+ & \multicolumn{3}{c}{classical} && \multicolumn{3}{c}{full} \\
+\cmidrule{2-4}\cmidrule{6-8}
+ & \preserve & \replace & \skipm && \preserve & \replace & \skipm \\
+\midrule
+\preserve & 2184 & 0 & 0 && 1652 & 147 & 203 \\
+\replace  & 0 & 423 & 0 && 25 & 276 & 0 \\
+\skipm    & 0 & 133 & 2260 && 507 & 133 & 2057 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{RQ4: performance and scalability.}
+\Cref{tab:scal} reports median times (9 runs after warm-up) on synthetic families: $n$ alternative derivations of the target, $r$ same-label substitutes for a forgotten value, $c$ cues for one forgotten value, and a target whose $d$ components can each be obtained by decrypting one of two ciphertexts ($2^d$ derivations). Theory size grows linearly with the number of derivations and candidates, and compilation and reasoning take under 0.3\,s for a theory of 65{,}538 elements. Derivation enumeration is the real limit: in the last family the enumeration cap is reached at $d=10$ and the tool returns \unknowncov{} although a surviving derivation exists, a conservative but uninformative answer that comes from the enumeration order. The prototype of \cref{thm:poly} decides the same instances, up to $d=64$, in under 0.2\,ms.
+
+\begin{table}[t]
+\centering\scriptsize
+\caption{Scalability (ms, median). $|\Pi|$: derivations compiled; $|\Dth|$: facts, rules and superiority pairs.}
+\label{tab:scal}
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}lrlrrrrr@{}}
+\toprule
+Family & param. & decision & $|\Pi|$ & $|\Dth|$ & enumerate & compile + reason & total \\
+\midrule
+alternative derivations & $n=256$ & \preserve & 256 & 4{,}098 & 1.0 & 14.1 & 17.4 \\
+\quad limits raised & $n=4096$ & \preserve & 4{,}096 & 65{,}538 & 11.9 & 257.7 & 316.6 \\
+substitutes & $r=255$ & \replace & 256 & 3{,}843 & 12.2 & 9.7 & 25.5 \\
+cues & $c=256$ & \preserve & 1 & 786 & 0.0 & 1.4 & 1.6 \\
+$2^d$ derivations & $d=9$ & \preserve & 512 & 22{,}565 & 5.1 & 45.8 & 56.0 \\
+ & $d=10$ & \unknowncov & 512 & 24{,}617 & 5.2 & 42.5 & 54.3 \\
+\quad prototype (\cref{thm:poly}) & $d=64$ & usable & -- & -- & -- & -- & 0.12 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{RQ5: practical utility.}
+We analysed with Tamarin (bound 25) the single-setup Bank Login model of the running example in three versions that differ only in the human's credential rule, corresponding to the decisions of \cref{tab:running}: the intended send (\preserve, S2), the substitute $m_3'$ (\replace, S1), and no send (\skipm, S3). For each we checked the attack of~\SCP{} (the password sent to $B_1$ opens a session at $B_2$, with only $B_1$ compromised), that the credential is sent, and that a login is reachable (\cref{tab:tamarin}). The attack exists only under \replace; the published semantics yields \replace{} in all three situations, so it reports the attack also when a cue is present and when the skill to answer the challenge is lost. \skipm{} removes the attack but also every login, which is why we pair safety with executability. We also re-verified the three Invoice models generated by the tool's host in an earlier run (minimal decision fixtures: a payer who forgot the supplier's account, with and without a cue, and with the signing skill lost): the wrong-account payment exists only without the cue, and the safety property holds vacuously under the signing lapse, since nothing is sent. Finally, an instrumented Bank model with the invariant that no forgotten value is used after the lapse is verified (149 steps) for the correct output and falsified (7 steps) for a deliberately wrong one.
+
+\begin{table}[t]
+\centering\scriptsize
+\caption{Tamarin verdicts (bound 25, one setup per trace). V: verified, F: falsified; steps in parentheses.}
+\label{tab:tamarin}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}llccc@{}}
+\toprule
+Model & Decision & attack trace exists & credential sent & login reachable \\
+\midrule
+Bank, hint shown (S2) & \preserve & F (6) & V (5) & V (7) \\
+Bank, no cue (S1) & \replace & V (12) & V (5) & V (13) \\
+Bank, $\lbl{adec}$ lost (S3) & \skipm & F (20) & F (2) & F (3253) \\
+\midrule
+ & & wrong account exists & payment sent & no wrong account \\
+\midrule
+Invoice, no cue & \replace & V (3) & V (3) & F (3) \\
+Invoice, cue & \preserve & F (3) & V (3) & V (3) \\
+Invoice, $\lbl{sign}$ lost & \skipm & F (2) & F (2) & V (2), vacuous \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Threats to validity.}
+The random states are small (at most six atoms), so the checks probe the semantics, not realistic ceremonies. The oracle is only as independent as the encoding we patched. The individual-defeat and propagating reasoners are prototypes; the latter is checked on the standard example of~\cite{antoniou2000flexible} but has no independent oracle. The Tamarin models are minimal and single-session: they show that decisions change verdicts, not that ceremonies are realistic. Host integration is exercised separately by the Maven tests; the reproduction script re-verifies recorded host outputs rather than regenerating them.

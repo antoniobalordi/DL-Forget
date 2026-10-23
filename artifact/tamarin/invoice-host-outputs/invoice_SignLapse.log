@@ -1,0 +1,136 @@
+maude tool: 'maude'
+ checking version: 3.5.1. OK.
+ checking installation: OK.
+[Theory InvoiceDL] Theory loaded
+[Theory InvoiceDL] Theory translated
+[Theory InvoiceDL] Derivation checks started
+[Theory InvoiceDL] Derivation checks ended
+[Theory InvoiceDL] Theory closed
+[Saturating Sources] Done
+theory InvoiceDL
+
+begin
+
+// Function signature and definition of the equational theory E
+
+functions: adec/2, aenc/2, fst/1, pair/2, pk/1, sign/2, snd/1, true/0,
+           verify/3
+equations:
+    adec(aenc(x.1, pk(x.2)), x.2) = x.1,
+    fst(<x.1, x.2>) = x.1,
+    snd(<x.1, x.2>) = x.2,
+    verify(sign(x.1, x.2), x.1, pk(x.2)) = true
+
+rule (modulo E) humansetup:
+   [ Fr( ~accS ), Fr( ~accAtt ), Fr( ~skH ), Fr( ~skB ) ]
+  --[ OnlyOnce( ), IntendedAccount( 'H', ~accS ) ]->
+   [
+   !Type( 'H', 'account', ~accS ), !Type( 'H', 'account', ~accAtt ),
+   State( 'H', '1',
+          <'H', 'B', 'S', 'service', 'amount', ~accS, ~accAtt, ~skH, pk(~skB)>
+   )
+   ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) H1_M:
+   [
+   State( 'H', '1',
+          <'H', 'B', 'S', 'service', 'amount', accS, accAtt, skH, pkB>
+   )
+   ]
+  --[ H( ) ]->
+   [ ]
+
+  /* has exactly the trivial AC variant */
+
+restriction OnlyOnce:
+  "∀ #i #j. ((OnlyOnce( ) @ #i) ∧ (OnlyOnce( ) @ #j)) ⇒ (#i = #j)"
+  // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i #j. ((OnlyOnce( ) @ #i) ∧ (OnlyOnce( ) @ #j)) ⇒ (#i = #j)"
+  */
+
+lemma Functional:
+  exists-trace "∃ payload #i. Send( 'H', 'order', payload ) @ #i"
+/*
+guarded formula characterizing all satisfying traces:
+"∃ payload #i. (Send( 'H', 'order', payload ) @ #i)"
+*/
+simplify
+by solve( Send( 'H', 'order', payload ) @ #i )
+
+lemma Wrong_Account_Exists:
+  exists-trace
+  "∃ desired actual skH skB #i #j.
+    ((IntendedAccount( 'H', desired ) @ #i) ∧
+     (Send( 'H', 'order',
+            aenc(sign(<'H', 'B', 'S', 'service', 'amount', actual>, skH), pk(skB))
+      ) @ #j)) ∧
+    (¬(desired = actual))"
+/*
+guarded formula characterizing all satisfying traces:
+"∃ desired actual skH skB #i #j.
+  (IntendedAccount( 'H', desired ) @ #i) ∧
+  (Send( 'H', 'order',
+         aenc(sign(<'H', 'B', 'S', 'service', 'amount', actual>, skH), pk(skB))
+   ) @ #j)
+ ∧
+  ¬(desired = actual)"
+*/
+simplify
+by solve( Send( 'H', 'order',
+                aenc(sign(<'H', 'B', 'S', 'service', 'amount', actual>, skH.1),
+                     pk(skB.1))
+          ) @ #j )
+
+lemma No_Wrong_Account:
+  all-traces
+  "∀ desired actual skH skB #i #j.
+    ((IntendedAccount( 'H', desired ) @ #i) ∧
+     (Send( 'H', 'order',
+            aenc(sign(<'H', 'B', 'S', 'service', 'amount', actual>, skH), pk(skB))
+      ) @ #j)) ⇒
+    (desired = actual)"
+/*
+guarded formula characterizing all counter-examples:
+"∃ desired actual skH skB #i #j.
+  (IntendedAccount( 'H', desired ) @ #i) ∧
+  (Send( 'H', 'order',
+         aenc(sign(<'H', 'B', 'S', 'service', 'amount', actual>, skH), pk(skB))
+   ) @ #j)
+ ∧
+  ¬(desired = actual)"
+*/
+simplify
+by solve( Send( 'H', 'order',
+                aenc(sign(<'H', 'B', 'S', 'service', 'amount', actual>, skH.1),
+                     pk(skB.1))
+          ) @ #j )
+
+/* All wellformedness checks were successful. */
+
+/*
+Generated from:
+Tamarin version 1.12.0
+Maude version 3.5.1
+Git revision: UNKNOWN, branch: UNKNOWN
+Compiled at: 2026-03-08 09:49:47.765662 UTC
+*/
+
+end
+
+==============================================================================
+summary of summaries:
+
+analyzed: Invoice_DL_SignLapse_actual.spthy
+
+  processing time: 0.13s
+  
+  Functional (exists-trace): falsified - no trace found (2 steps)
+  Wrong_Account_Exists (exists-trace): falsified - no trace found (2 steps)
+  No_Wrong_Account (all-traces): verified (2 steps)
+
+==============================================================================

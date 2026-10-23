@@ -1,0 +1,44 @@
+== compile X-Men 2.0 DL core
+== core tests (96)
+AmbiguityBlockingReasonerTest                                tests=14 failures=0
+ForgetBlockingTest                                           tests=6 failures=0
+NormalDerivationsTest                                        tests=16 failures=0
+ForgetDlEngineTest                                           tests=24 failures=0
+ForgetDlPaperExamplesTest                                    tests=15 failures=0
+ForgetDlPropertiesTest                                       tests=4 failures=0
+ForgetDlBridgeTest                                           tests=6 failures=0
+ForgetDlReviewFixesTest                                      tests=11 failures=0
+TOTAL tests=96 failures=0
+== differential oracle against the ASP encoding (3 seeds x 600 theories)
+== seed 1
+[upstream] theories=600 literals=14034 mismatches=14 asp_inconsistent_literals=14 java_inconsistent_literals=0
+  MISMATCH ('compiled50', 'Usable(PA2:x1A2:x0)', '-D+d', '-D+d-d')
+  MISMATCH ('compiled50', 'Via(pi_d3c0b8dfbe8642b5,PA2:x1A2:x0)', '-D+d', '-D+d-d')
+  MISMATCH ('compiled50', 'Via(pi_fc4fcf50ef64b65a,PA2:x1A2:x0)', '-D+d', '-D+d-d')
+  MISMATCH ('compiled68', 'Via(pi_680d27a3d5d672f2,F4:senc2:A2:x1A2:k0)', '-D+d', '-D+d-d')
+  MISMATCH ('compiled68', 'Via(pi_d96639a62b034e76,A2:x1)', '-D+d', '-D+d-d')
+[patched] theories=600 literals=14034 mismatches=0 asp_inconsistent_literals=0 java_inconsistent_literals=0
+== seed 2
+[upstream] theories=600 literals=14050 mismatches=1 asp_inconsistent_literals=1 java_inconsistent_literals=0
+  MISMATCH ('compiled135', 'Via(pi_ad426792a5c4b2da,PA2:x0A2:x2)', '-D+d', '-D+d-d')
+[patched] theories=600 literals=14050 mismatches=0 asp_inconsistent_literals=0 java_inconsistent_literals=0
+== seed 3
+[upstream] theories=600 literals=13920 mismatches=15 asp_inconsistent_literals=15 java_inconsistent_literals=0
+  MISMATCH ('compiled28', 'Via(pi_a83b782b0dd7397c,PA2:x1A2:x1)', '-D+d', '-D+d-d')
+  MISMATCH ('compiled33', 'Usable(F4:senc2:A2:x2A2:k0)', '-D+d', '-D+d-d')
+  MISMATCH ('compiled33', 'Via(pi_9327f25e41aecfbb,F4:senc2:A2:x2A2:k0)', '-D+d', '-D+d-d')
+  MISMATCH ('compiled119', 'Usable(F4:senc2:A2:x1A2:k0)', '-D+d', '-D+d-d')
+  MISMATCH ('compiled119', 'Via(pi_0da223dfc4da6e85,PA2:x0A2:x0)', '-D+d', '-D+d-d')
+[patched] theories=600 literals=13920 mismatches=0 asp_inconsistent_literals=0 java_inconsistent_literals=0
+== research harness
+== Tamarin
+preserve.spthy | Forget_Attack_Only_B1_Compromised: no verdict (exit 127, wall limit 300s) | 0.0 s
+preserve.spthy | Credential_Sent: no verdict (exit 127, wall limit 300s) | 0.0 s
+preserve.spthy | Functional: no verdict (exit 127, wall limit 300s) | 0.0 s
+replace.spthy | Forget_Attack_Only_B1_Compromised: no verdict (exit 127, wall limit 300s) | 0.0 s
+replace.spthy | Credential_Sent: no verdict (exit 127, wall limit 300s) | 0.0 s
+replace.spthy | Functional: no verdict (exit 127, wall limit 300s) | 0.0 s
+skip.spthy | Forget_Attack_Only_B1_Compromised: no verdict (exit 127, wall limit 300s) | 0.0 s
+skip.spthy | Credential_Sent: no verdict (exit 127, wall limit 300s) | 0.0 s
+skip.spthy | Functional: no verdict (exit 127, wall limit 300s) | 0.0 s
+done; outputs in /Users/antonio/Desktop/cav-forget-dl/artifact/results

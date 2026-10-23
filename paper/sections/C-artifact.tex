@@ -1,0 +1,6 @@
+\section{Artifact and Reproduction}
+\label{app:artifact}
+
+An anonymised artifact accompanies the submission (link withheld for review). It contains: the research harness (running example, variant study, comparison with the published algorithm, scalability, the prototype of \cref{thm:poly}, the preliminary adversarial model); the Tamarin models and logs of RQ5; the outputs of every run; and one script that recompiles the tool's DL core and its 96 tests with \texttt{javac}, runs the differential oracle (clingo~5.8, encoding at commit \texttt{679c638}), all studies, and Tamarin. The core and its tests depend only on the JDK; the tests use only \texttt{Test}, \texttt{DisplayName} and \texttt{Assertions} of JUnit~5, for which the artifact ships a minimal implementation with the standard semantics, so no build-tool repository is needed.
+
+The reproduction script exercises the core tests, the oracle, all studies and all Tamarin judgments. The Maven commands in the repository's \texttt{README.md} separately exercise the host's HTTP layer, ordering and rewriting of Tamarin rules. The script re-verifies the recorded Invoice outputs, stored with checksums, rather than regenerating them. The Bank models of RQ5 are the single-setup model of the running example in three versions that differ only in the credential rule.

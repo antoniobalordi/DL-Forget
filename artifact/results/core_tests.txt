@@ -1,0 +1,9 @@
+AmbiguityBlockingReasonerTest                                tests=14 failures=0
+ForgetBlockingTest                                           tests=6 failures=0
+NormalDerivationsTest                                        tests=16 failures=0
+ForgetDlEngineTest                                           tests=24 failures=0
+ForgetDlPaperExamplesTest                                    tests=15 failures=0
+ForgetDlPropertiesTest                                       tests=4 failures=0
+ForgetDlBridgeTest                                           tests=6 failures=0
+ForgetDlReviewFixesTest                                      tests=11 failures=0
+TOTAL tests=96 failures=0

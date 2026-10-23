@@ -1,0 +1,20 @@
+== seed 1
+[upstream] theories=600 literals=14034 mismatches=14 asp_inconsistent_literals=14 java_inconsistent_literals=0
+  MISMATCH ('compiled50', 'Usable(PA2:x1A2:x0)', '-D+d', '-D+d-d')
+  MISMATCH ('compiled50', 'Via(pi_d3c0b8dfbe8642b5,PA2:x1A2:x0)', '-D+d', '-D+d-d')
+  MISMATCH ('compiled50', 'Via(pi_fc4fcf50ef64b65a,PA2:x1A2:x0)', '-D+d', '-D+d-d')
+  MISMATCH ('compiled68', 'Via(pi_680d27a3d5d672f2,F4:senc2:A2:x1A2:k0)', '-D+d', '-D+d-d')
+  MISMATCH ('compiled68', 'Via(pi_d96639a62b034e76,A2:x1)', '-D+d', '-D+d-d')
+[patched] theories=600 literals=14034 mismatches=0 asp_inconsistent_literals=0 java_inconsistent_literals=0
+== seed 2
+[upstream] theories=600 literals=14050 mismatches=1 asp_inconsistent_literals=1 java_inconsistent_literals=0
+  MISMATCH ('compiled135', 'Via(pi_ad426792a5c4b2da,PA2:x0A2:x2)', '-D+d', '-D+d-d')
+[patched] theories=600 literals=14050 mismatches=0 asp_inconsistent_literals=0 java_inconsistent_literals=0
+== seed 3
+[upstream] theories=600 literals=13920 mismatches=15 asp_inconsistent_literals=15 java_inconsistent_literals=0
+  MISMATCH ('compiled28', 'Via(pi_a83b782b0dd7397c,PA2:x1A2:x1)', '-D+d', '-D+d-d')
+  MISMATCH ('compiled33', 'Usable(F4:senc2:A2:x2A2:k0)', '-D+d', '-D+d-d')
+  MISMATCH ('compiled33', 'Via(pi_9327f25e41aecfbb,F4:senc2:A2:x2A2:k0)', '-D+d', '-D+d-d')
+  MISMATCH ('compiled119', 'Usable(F4:senc2:A2:x1A2:k0)', '-D+d', '-D+d-d')
+  MISMATCH ('compiled119', 'Via(pi_0da223dfc4da6e85,PA2:x0A2:x0)', '-D+d', '-D+d-d')
+[patched] theories=600 literals=13920 mismatches=0 asp_inconsistent_literals=0 java_inconsistent_literals=0

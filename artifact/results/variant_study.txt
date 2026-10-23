@@ -1,0 +1,16 @@
+## Compiled Forget theories
+seeds=5 runs/seed=2000 theories=10000 literals=495760 Via=41133 Usable=30000
+C1 Thm1 (production tags = Def.6) failures=0
+C2 ambiguity propagation = blocking on every literal: failures=0
+C3 no-team-defeat characterisation failures=0
+   Via atoms with >=2 blocked hypotheses, all cued, no procedural blocker: 411
+   Via tags differing (team vs no team defeat)=411 (predicted 411); Usable tags differing=183
+
+## Random general theories (with conflicting defeasible rules)
+theories=3000 literals=29834 differ(AB vs AP)=43 differ(AB vs NTD)=3 AB-incoherent=0
+
+## Textbook ambiguity example
+p  blocking:-∂  propagation:-∂  support:+∫
+¬p  blocking:-∂  propagation:-∂  support:+∫
+q  blocking:-∂  propagation:-∂  support:+∫
+¬q  blocking:+∂  propagation:-∂  support:+∫

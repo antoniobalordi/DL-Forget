@@ -1,0 +1,12 @@
+[upstream] theories=600 literals=14034 mismatches=14 asp_inconsistent_literals=14 java_inconsistent_literals=0
+  by-kind {'rnd': 0, 'compiled': 14} theories ['compiled130', 'compiled150', 'compiled161', 'compiled175', 'compiled186', 'compiled50', 'compiled68']
+[patched] theories=600 literals=14034 mismatches=0 asp_inconsistent_literals=0 java_inconsistent_literals=0
+  by-kind {'rnd': 0, 'compiled': 0} theories []
+[upstream] theories=600 literals=14050 mismatches=1 asp_inconsistent_literals=1 java_inconsistent_literals=0
+  by-kind {'rnd': 0, 'compiled': 1} theories ['compiled135']
+[patched] theories=600 literals=14050 mismatches=0 asp_inconsistent_literals=0 java_inconsistent_literals=0
+  by-kind {'rnd': 0, 'compiled': 0} theories []
+[upstream] theories=600 literals=13920 mismatches=15 asp_inconsistent_literals=15 java_inconsistent_literals=0
+  by-kind {'rnd': 0, 'compiled': 15} theories ['compiled119', 'compiled130', 'compiled153', 'compiled28', 'compiled33']
+[patched] theories=600 literals=13920 mismatches=0 asp_inconsistent_literals=0 java_inconsistent_literals=0
+  by-kind {'rnd': 0, 'compiled': 0} theories []
