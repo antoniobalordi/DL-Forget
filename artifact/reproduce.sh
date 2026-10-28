@@ -30,10 +30,10 @@ javac -d "$B/shim" "$HERE"/shim/org/junit/jupiter/api/*.java "$HERE"/shim/RunTes
 ( cd "$X/test/java" && javac -encoding UTF-8 -cp "$B/main:$B/shim" -d "$B/test" com/xmen/service/forget/dl/*.java )
 CP=$B/main:$B/shim:$B/test
 
-echo "== core tests (96)"
+echo "== core tests (110)"
 java -cp "$CP" RunTests $(for c in AmbiguityBlockingReasonerTest ForgetBlockingTest NormalDerivationsTest \
   ForgetDlEngineTest ForgetDlPaperExamplesTest ForgetDlPropertiesTest ForgetDlBridgeTest \
-  ForgetDlReviewFixesTest; do
+  ForgetDlReviewFixesTest UsabilityDeciderTest ForgetDlUsabilityFallbackTest; do
   echo com.xmen.service.forget.dl.$c; done) | tee "$OUT/core_tests.txt"
 
 if [ -n "$DDL" ]; then
@@ -50,7 +50,9 @@ J=(java -Xmx5g -Dstdout.encoding=UTF-8 -cp "$H")
 "${J[@]}" com.xmen.service.forget.dl.ResearchVariantStudy 5 2000 > "$OUT/variant_study.txt"
 "${J[@]}" com.xmen.service.forget.dl.ResearchDecisionStudy 5000  > "$OUT/decision_study.md"
 "${J[@]}" com.xmen.service.forget.dl.ResearchClosureCheck        > "$OUT/closure_check.md"
-"${J[@]}" com.xmen.service.forget.dl.ResearchAdversarialCues     > "$OUT/adversarial_cues.md"
+"${J[@]}" com.xmen.service.forget.dl.ResearchAdversarialCues     > "$OUT/adversarial_cues.md" 2> "$OUT/table6.dl"
+"${J[@]}" com.xmen.service.forget.dl.ResearchDeltaTags "$OUT/table6.dl" > "$OUT/table6_tags.txt"
+python3 -I "$REPO/X-Men_2.0/scripts/dl-oracle/ap_crosscheck.py" check "$DDL" "$OUT/table6.dl" "$OUT/table6_tags.txt" --support | tee "$OUT/table6_oracle.txt"
 "${J[@]}" com.xmen.service.forget.dl.ResearchScalability         > "$OUT/scalability.md"
 
 if command -v tamarin-prover >/dev/null && command -v maude >/dev/null; then

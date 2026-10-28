@@ -126,7 +126,7 @@ public final class ResearchScalability {
     NormalDerivations nd = new NormalDerivations();
     ForgetDlCompiler compiler = new ForgetDlCompiler();
     AmbiguityBlockingReasoner reasoner = new AmbiguityBlockingReasoner();
-    System.out.println("| family | n | decision | coverage | |T| | |Π| | facts | rules | sup | |D| | "
+    System.out.println("| family | n | decision | candidate coverage | |T| | |Π| | facts | rules | sup | |D| | "
         + "enum ms | compile ms | reason ms | engine ms |");
     System.out.println("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
     for (Instance inst : all) {

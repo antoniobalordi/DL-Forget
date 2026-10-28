@@ -13,7 +13,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** Outcome of one application of Algorithm 2, with its cognitive trace (Section 7.4). */
+/**
+ * Outcome of one transition, with its enumerated cognitive trace and separate exact usability
+ * results from the saturation fallback. Fallback results do not alter the compiled theory's tags.
+ */
 public record ForgetDlResult(
     Status status,
     Decision decision,
@@ -27,7 +30,8 @@ public record ForgetDlResult(
     boolean partial,
     Compiled compiled,
     Conclusions conclusions,
-    List<TargetTrace> trace) {
+    List<TargetTrace> trace,
+    Map<Message, Boolean> usabilityFallback) {
 
   /** Processing status; anything but OK carries no semantic decision. */
   public enum Status {
@@ -38,17 +42,17 @@ public record ForgetDlResult(
 
   /** Algorithm 2 outcome, plus explicit non-decisions. */
   public enum Decision {
-    /** +∂Usable(m2): the intended send is kept (line 23). */
+    /** The intended send is usable by a surviving proof or exact saturation. */
     PRESERVE,
-    /** −∂Usable(m2) and V ≠ ∅: one Replace per usable variant (lines 25-28). */
+    /** Intended send conclusively unusable and V ≠ ∅: one Replace per usable variant. */
     REPLACE,
-    /** −∂Usable(m2), V = ∅, complete coverage (line 30). */
+    /** Exhaustive candidate set with every target conclusively unusable. */
     SKIP,
     /** A lapsed message is used in an internal action (lines 5-6). */
     NEGLECT,
     /** The transition has no send; only the state update applies. */
     NO_SEND,
-    /** Negative evidence rests on a truncated enumeration: no Replace/Skip claim. */
+    /** Re-acquisition, candidate generation or target usability remains inconclusive. */
     UNKNOWN_COVERAGE,
     /** The theory leaves Usable(m2) without a defeasible tag. */
     UNDECIDED_LOGIC,
@@ -56,7 +60,7 @@ public record ForgetDlResult(
     NONE
   }
 
-  /** A target in T with the syntactic substitutions C that produced it. */
+  /** A target in T with its substitutions and the Usable tag of the enumerated theory. */
   public record Candidate(
       Message target,
       boolean intended,
@@ -103,7 +107,7 @@ public record ForgetDlResult(
 
   static ForgetDlResult failure(Status s, List<String> notes, HumanState after) {
     return new ForgetDlResult(s, Decision.NONE, List.copyOf(notes), after, Set.of(), Set.of(),
-        List.of(), List.of(), Coverage.COMPLETE, false, null, null, List.of());
+        List.of(), List.of(), Coverage.COMPLETE, false, null, null, List.of(), Map.of());
   }
 
   /** Builds the cognitive trace from the compiled theory and its tagged conclusions. */
@@ -180,8 +184,13 @@ public record ForgetDlResult(
     for (TargetTrace t : trace) {
       sb.append(t.intended() ? "intended " : "variant  ").append(Terms.canonical(t.target()))
           .append(": ").append(t.usableTag()).append("Usable");
+      if (usabilityFallback.containsKey(t.target())) {
+        sb.append(" (enumerated theory); saturation: ")
+            .append(usabilityFallback.get(t.target()) ? "usable" : "unusable")
+            .append(" (exact; no procedure lapses)");
+      }
       if (t.noDerivation()) {
-        sb.append(" — no normal derivation (Π = ∅)");
+        sb.append(" — no enumerated normal derivation (Π = ∅)");
       }
       sb.append('\n');
       for (DerivationTrace d : t.derivations()) {

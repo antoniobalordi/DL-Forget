@@ -4,12 +4,18 @@
 \subsection{Cognitive state}
 
 \begin{definition}[Cognitive state]\label{def:state}
-The cognitive state of $\human$ at a transition is $\sigma=(K,\Forget,\PForget,\cuemodel)$, where $K$ is the knowledge and $\Forget$ the set of forgotten messages of~\SCP; $\PForget=(\Rbar,\Pibar)$ is the \emph{procedural state}, with $\Rbar\subseteq\RR$ the forgotten inference rules and $\Pibar$ a set of derivations forgotten as wholes; and $\cuemodel=(\Cue,\Assoc,\Pres)$ is the \emph{cue model}: $\Cue$ is a finite set of cue identifiers (not messages), $\Assoc\subseteq\Cue\times K$ records which cue the human associates with which stored message, and $\Pres\subseteq\Cue$ are the cues present at this transition. A message $h$ is \emph{cued}, $\cued_\sigma(h)$, if $(c,h)\in\Assoc$ for some $c\in\Pres$.
+The cognitive state of $\human$ at a transition is $\sigma=(K,\Forget,\PForget,\cuemodel)$, where $K$ is the knowledge and $\Forget$ the set of forgotten messages; $\PForget=(\Rbar,\Pibar)$ is the \emph{procedural state}, with $\Rbar\subseteq\RR$ the forgotten inference rules and $\Pibar$ a set of derivations forgotten as wholes; and $\cuemodel=(\Cue,\Assoc,\Pres)$ is the \emph{cue model}: $\Cue$ is a finite set of cue identifiers (not messages), $\Assoc\subseteq\Cue\times K$ records which cue the human associates with which stored message, and $\Pres\subseteq\Cue$ are the cues present at this transition. A message $h$ is \emph{cued}, $\cued_\sigma(h)$, if $(c,h)\in\Assoc$ for some $c\in\Pres$.
 \end{definition}
 
-The \emph{procedural blockers} of a derivation are $\BlockedP(\pi)=\{\RuleA{r}\mid r\in\Rules(\pi)\cap\Rbar\}\cup\{\ProcA{\pi}\mid\pi\in\Pibar\}$. Forgetting a rule is losing a skill everywhere: every derivation that applies it is affected, for every target. Forgetting a derivation affects that derivation only. A forgotten explicit check remains a \neglect{}, since it is an action of the role script, not a derivation step. Rules abstract human-and-device competences: losing $\lbl{adec}$ stands for losing the workflow that opens the challenge. $\Assoc$ persists across transitions, whereas $\Pres$ is local to one: a cue restores \emph{access} to a stored message for one step and changes neither $K$ nor $\Forget$~\cite{tulving1974cue}. Lapses and associations are hypotheses supplied by the analyst; the model does not predict behaviour.
+The \emph{procedural blockers} of a derivation are $\BlockedP(\pi)=\{\RuleA{r}\mid r\in\Rules(\pi)\cap\Rbar\}\cup\{\ProcA{\pi}\mid\pi\in\Pibar\}$. Forgetting a rule means that every derivation that applies it is affected. Forgetting a derivation affects that derivation only. A forgotten explicit check remains a \neglect{}, since it is an action of the role script, not a derivation step. 
 
-\paragraph{State update.} As in~\SCP, a forgotten message is added to $\Forget$, and a forgotten received message $m_1$ is not added to $K$; unlike~\SCP{}, $m_1$ is also recorded in $\Forget$, which matters only under Cases~2--3, since $m_1\notin K$ is never a hypothesis. A forgotten rule or derivation is added to $\Rbar$ or $\Pibar$ and removed by a relearning event. A forgotten message used in an internal action triggers \neglect{} as in~\SCP. Re-acquisition is iterated to a fixpoint: a forgotten $f$ leaves $\Forget$ if $f=m_1$, or if a derivation of $f$ uses $m_1$ and has neither blocked hypotheses nor procedural blockers, so a lost skill cannot be used to recover a value.
+$\Assoc$ persists across transitions, whereas $\Pres$ is local to one: a cue restores \emph{access} to a stored message for one step and changes neither $K$ nor $\Forget$~\cite{tulving1974cue}. Both lapses and associations are hypotheses supplied by the analyst; the model does not predict behaviour.
+
+\paragraph{State update.} Let $\Lambda$ be the messages forgotten at this transition. As in~\cite{sandu2026formal}, each message in $\Lambda$ is added to $\Forget$, and a forgotten received $m_1$ is not added to $K$. Unlike~\cite{sandu2026formal}, $m_1$ is also recorded in $\Forget$: a check that reads it is then neglected under every closure case, and under Cases~2--3 it also blocks what is derivable from it. A forgotten rule or derivation is added to $\overline{R}$ or $\overline{\Pi}$ and removed by a relearning event. This gives $\sigma'$, with $\Forget'=\Forget\cup\Lambda$ and $K' = K$ if $m_1 \in \Lambda$ (or if no message is received) and $K' = K \cup {m_1}$ otherwise..
+
+A message $s$ is \emph{inaccessible} in $\sigma'$ if $s\in\mathit{Blocked}(\{s\},\Forget')$ and $s$ is not cued. An internal action $\alpha$ is neglected if a message occurring in its operands $\mathit{Op}(\alpha)$ is inaccessible in $\sigma'$. 
+
+Re-acquisition then shrinks $\Forget'$ to $\Forget''$: a message $f\in\Forget'\setminus\Lambda$ is removed if $f=m_1$, or if some $\pi\in\Basis^*_f(K')$ with $m_1\in\mathit{Hyp}_\pi$ and $\mathit{Blocked}_P(\pi)=\emptyset$ has no hypothesis blocked by the current set. Excluding $\Lambda$ keeps a lapse from being undone by the receipt it follows; requiring $m_1$ in every round ties recovery to the receipt, so an earlier recovery helps only by no longer being blocked; and a lost skill recovers nothing. Cues play no role: they change neither $K$ nor $\Forget$. Removals only unblock hypotheses, so a removable message stays removable; the result is order-independent and reached within $|\Forget'|$ rounds. The resulting state $\sigma''$ is passed to the next transition, also when an action is neglected. 
 
 \subsection{Compilation into Defeasible Logic}
 
@@ -28,27 +34,27 @@ $r^{\mathit{use}}_{\pi}$: & $\Via(K,\pi,t)\strict\Usable(t)$ & aggregation \\
 $\omega_{\pi,h}$: & $\Lapsed(h)\defeat\neg\Via(K,\pi,t)$ & for every $h\in\Hyp_\pi$ \\
 $\omega^{\mathit{rule}}_{\pi,r}$: & $\Lapsed(\RuleA{r})\defeat\neg\Via(K,\pi,t)$ & for every $r\in\Rules(\pi)$ \\
 $\omega^{\mathit{proc}}_{\pi}$: & $\Lapsed(\ProcA{\pi})\defeat\neg\Via(K,\pi,t)$ & \\
-$\rho_{\pi,h,c}$: & $\ContextCue(c,h)\defeas\Via(K,\pi,t)$ & $h$ blocked in $\pi$, $(c,h)\in\Assoc$
+$\rho_{\pi,h,c}$: & $\ContextCue(c,h)\defeas\Via(K,\pi,t)$ & for every $h \in \mathit{Blocked}(\mathit{Hyp}_\pi, \mathit{Forget})$ and $(c, h) \in \mathit{Assoc}$.
 \end{tabular}
 \end{center}
-with $\rho_{\pi,h,c}>\omega_{\pi,h}$ and, as in the original formulation, $\omega>d_\pi$ for the three kinds of defeater $\omega$ of $\pi$. All atoms are ground and propositional. As $K$ is fixed within a theory, we write $\Via(\pi,t)$ for $\Via(K,\pi,t)$.
+with $\rho_{\pi,h,c}>\omega_{\pi,h}$ and $\omega>d_\pi$ for the three kinds of defeater $\omega$ of $\pi$. As $K$ is fixed within a theory, we write $\Via(\pi,t)$ for $\Via(K,\pi,t)$.
 \end{definition}
 
-Defeaters and reinstaters are emitted whether or not they apply; the facts decide which ones do. The compilation instantiates the vocabulary of propositional DL($\partial$) and does not extend its proof theory. Usability always goes through a surviving derivation: there is no rule from $\Known$ to $\Usable$.
+Defeaters and reinstaters (for blocked hypotheses with associated cues, regardless of $c \in \Pres$) are always emitted, the effect is decided by facts. The compilation instantiates the vocabulary of propositional DL($\partial$) and does not extend its proof theory. Usability always goes through a surviving derivation: there is no rule from $\Known$ to $\Usable$.
 
 \subsection{How the theory reasons}
 \label{sec:patterns}
-The theory encodes a default and two levels of exception. We describe them on the running example, with the tags computed by the tool.
+We now proceed describing the theory, showing the default case and the exceptions.
 
 \emph{Default.} If the hypotheses of $\pi$ are known, $d_\pi$ supports $\Via(\pi,t)$; without applicable defeaters, $\pd\Via(\pi,t)$, and the strict rule gives $\pd\Usable(t)$.
 
 \emph{Defeat without negation.} In S1, $\Lapsed(\pwa)$ makes $\omega_{\pia,\pwa}$ and $\omega_{\pib,\pwa}$ applicable. No rule supports $\neg\Via$, so the result is $\md\Via(\pia,\mthree)$, not $\pd\neg\Via(\pia,\mthree)$: the lapse removes a reason, it does not assert that $\mthree$ cannot be built. $\Known(\pwa)$ remains a fact; $\md\Usable(\mthree)$ and $\pd\Usable(m_3')$.
 
-\emph{Exception to the exception.} In S2, $\ContextCue(\mathit{hint},\pwa)$ makes $\rho_{\pi,\pwa,\mathit{hint}}$ applicable, and $\rho>\omega$ overrules the lapse: $\pd\Usable(\mthree)$, while $\Lapsed(\pwa)$ stays a fact and $\pwa$ stays in $\Forget$. At a later transition without the hint the lapse applies again.
+\emph{Exception to the exception.} In S2, $\ContextCue(\mathit{hint},\pwa)$ makes $\rho_{\pi,\pwa,\mathit{hint}}$ applicable, and $\rho>\omega$ overrules the lapse: $\pd\Usable(\mthree)$, while $\Lapsed(\pwa)$ stays a fact and $\pwa$ stays in $\Forget$. At a later transition without the hint the lapse would apply again.
 
-\emph{Team recovery.} In S10, $\human$ and $\pwa$ are blocked in both derivations. Each defeater is overruled by a different reinstater, $\rho_{\pi,\human,\mathit{autofill}}>\omega_{\pi,\human}$ and $\rho_{\pi,\pwa,\mathit{hint}}>\omega_{\pi,\pwa}$: no single rule beats both, yet $\pd\Via(\pi,\mthree)$ holds. With the hint only (S9), $\omega_{\pi,\human}$ stands.
+\emph{Team recovery.} In S8, $\human$ and $\pwa$ are blocked in both derivations. Each defeater is overruled by a different reinstater, $\rho_{\pi,\human,\mathit{autofill}}>\omega_{\pi,\human}$ and $\rho_{\pi,\pwa,\mathit{hint}}>\omega_{\pi,\pwa}$: no single rule beats both, yet $\pd\Via(\pi,\mthree)$ holds. With the hint only (S7), $\omega_{\pi,\human}$ stands.
 
-\emph{Conclusions per derivation.} In S8, $\nH$ and $\pwa$ are forgotten and the hint is shown. $\Via(\pia,\mthree)$ is defeated by $\omega_{\pia,\nH}$, but $\nH\notin\Hyp_{\pib}$, so $\pd\Via(\pib,\mthree)$ and the send is preserved: one derivation is defeated while another survives.
+\emph{Conclusions per derivation.} In S6, $\nH$ and $\pwa$ are forgotten and the hint is shown. $\Via(\pia,\mthree)$ is defeated by $\omega_{\pia,\nH}$, but $\nH\notin\Hyp_{\pib}$, so $\pd\Via(\pib,\mthree)$ and the send is preserved: one derivation is defeated while another survives.
 
 \emph{Skills are not values.} In S3, $\Lapsed(\RuleA{\lbl{adec}})$ activates $\omega^{\mathit{rule}}$ on every derivation that decrypts, including those of $m_3'$. A substitute never restores a skill, and a cue, being associated with a message, cannot overrule a rule defeater; both candidates are unusable and the send is skipped.
 
@@ -56,25 +62,25 @@ The theory encodes a default and two levels of exception. We describe them on th
 \label{sec:decision}
 
 \begin{algorithm}[t]
-\caption{Decision for one human transition (as implemented)}\label{alg:decision}
-\small
+\caption{Bounded-enumeration decision for one human transition}\label{alg:decision}
 \begin{algorithmic}[1]
 \Require transition with received $m_1$, intended send $m_2$, internal actions $a$; state $\sigma$; events
-\State $\sigma'=(K',\Forget',(\Rbar',\Pibar'),\cuemodel')\gets$ state update of $\sigma$ (lapses, relearning, cues)
-\If{a message forgotten at this transition occurs in $a$} \Return \neglect \EndIf
-\State apply re-acquisition to $\Forget'$ (fixpoint); \textbf{if} it was cut off \textbf{then return} \unknowncov
-\State $T\gets\{m_2\}\cup\{m_2[C]\mid \pi\in\Basis_{m_2}(K'),\ C\in\prod_{h\in\Blocked(\Hyp_\pi,\Forget')}R_h\}$
+\State $\sigma'\gets$ state update of $\sigma$ (lapses, relearning, cues)
+\State $a_\bot\gets\{\alpha\in a\mid$ a message occurring in $\mathit{Op}(\alpha)$ is inaccessible in $\sigma'\}$
+\State $\sigma''\gets$ re-acquisition applied to $\Forget'$ (fixpoint); \textbf{if} it was cut off \textbf{then return} \textsc{Unknown}
+\State \textbf{if} $a_\bot\neq\emptyset$ \textbf{then return} $\textsc{Neglect}(a_\bot)$ \Comment{send unchanged; certified by the host}
+\State $T\gets\{m_2\}\cup\{m_2[C]\mid \pi\in\Basis_{m_2}(K'),\ C\in\prod_{h\in\mathit{Rep}_\pi}R_h\}$ \Comment{$\mathit{Rep}_\pi$: uncued blocked hypotheses}
 \State $\Pi_t\gets\Basis_t(K')$ for $t\in T$, with coverage flags \Comment{finite basis, bounded search}
-\State compute the tags of $\Dth=\compile(\sigma',T,\Pi)$
-\If{$\pd\Usable(m_2)$} \Return \preserve \EndIf
-\If{the search for $m_2$ was cut off} \Return \unknowncov \EndIf
-\State $V\gets\{t\in T\setminus\{m_2\}\mid\pd\Usable(t)\}$
-\If{$V\neq\varnothing$} \Return \replace$(V)$ \Comment{flagged \emph{partial} if some search was cut off}
-\ElsIf{all searches complete} \Return \skipm \Else\ \Return \unknowncov
-\EndIf
+\State compute the tags of $D=\mathit{compile}(\sigma'',T,\Pi)$
+\State \textbf{if} $+\partial\mathit{Usable}(m_2)$ \textbf{then return} \textsc{Preserve}
+\State \textbf{if} the search for $m_2$ was incomplete \textbf{then return} \textsc{Unknown}
+\State $V\gets\{t\in T\setminus\{m_2\}\mid +\partial\mathit{Usable}(t)\}$
+\State \textbf{if} $V\neq\emptyset$ \textbf{then return} $\textsc{Replace}(V)$ \Comment{flagged partial if some search was cut off}
+\State \textbf{else if} $T$ and all searches are complete \textbf{then return} \textsc{Skip}
+\State \textbf{else return} \textsc{Unknown}
 \end{algorithmic}
 \end{algorithm}
 
-\Cref{alg:decision} keeps the control structure of~\SCP{} and changes what decides. The candidate set is the variant space of~\SCP{}, with $R_h=\{h'\in K'\setminus\Forget'\mid h'\neq h$, same format and label as $h\}$, and two refinements: a blocked hypothesis is never replaced by itself (under Cases~2--3 the syntactic test $h'\notin\Forget$ admits $h'=h$), and a substitute is emitted only if it is itself usable, so the defeaters that block $m_2$ also block substitutes that need the same lost value or skill. One theory is compiled for all candidates, a usable $m_2$ is never replaced, substitutes are generated for blocked messages only, and \unknowncov{} replaces any negative answer that would rest on an incomplete search (\cref{sec:bounded}).
+\Cref{alg:decision} gives the enumeration-only baseline; the implementation adds the usability fallback of \cref{sec:implementation}. It keeps the control structure of the set-based algorithm and changes what decides. The candidate set is the variant space of~\cite{sandu2026formal}, with $R_h=\{h'\in K'\setminus\Forget''\mid h'\neq h$, same format and label as $h\}$, and three refinements. A blocked hypothesis is never replaced by itself (under Cases~2--3 the syntactic test $h'\notin\Forget$ admits $h'=h$). A cued hypothesis is kept: only $\mathit{Rep}_\pi=\{h\in\mathit{Blocked}(\mathit{Hyp}_\pi,\Forget'')\mid\neg\cued_{\sigma''}(h)\}$ is replaced, since a cue gives access to its message at this step; hence a cue can change which substitutes are generated. A substitute is emitted only if it is itself usable, so the defeaters that block $m_2$ also block substitutes that need the same lost value or skill. We keep the syntactic test $h'\notin\Forget''$ of~\cite{sandu2026formal}: under Cases~2--3 a substitute derivable from $\Forget''$ can still be usable through another derivation; and a cued forgotten message is not a substitute, since a cue restores access to its own message, not to a different one (Sect.~9). $m_2[C]$ replaces simultaneously every occurrence in $m_2$ of each $h$ by $C(h)$, including inside function arguments, so a blocked hypothesis outside $\St(m_2)$, such as a decryption key or a pair from which a component of $m_2$ is projected, leaves $m_2[C]$ unchanged; if its $R_h$ is empty, $\pi$ contributes no candidate. It's not possible to replace a blocked hypothesis that does not occur in $m_2$, such as a decryption key: either the lapse is resolved by another derivation or a cue, or the send is skipped. One theory is compiled for all candidates, and a usable $m_2$ is never replaced. \textsc{Unknown} replaces every answer when re-acquisition was cut off, since the state passed on would be uncertain, and every negative answer that rests on an incomplete derivation search (Sect.~5.4).
 
-\paragraph{Cognitive trace.} The tagged conclusions, with the rules that establish them, are the explanation. For each candidate and derivation the tool records the tag of $\Via(\pi,t)$, the blocked hypotheses, the applicable supporters, and every applicable defeater, classified as declarative, rule or procedure and marked \emph{standing} or \emph{overruled}, with the overruling reinstaters. A \preserve{} is justified by a surviving $\Via$ (and, if recovered, the reinstater); a \replace{} by standing defeaters on every derivation of $m_2$ and a surviving derivation of the substitute; a \skipm{} by standing defeaters on every derivation of every candidate.
+\paragraph{Cognitive trace.} For enumeration-based decisions, the tagged conclusions, with the rules that establish them, are the explanation. For each candidate and derivation the tool records the tag of $\Via(\pi,t)$, the blocked hypotheses, the applicable supporters, and every applicable defeater, classified as declarative, rule or procedure and marked \emph{standing} or \emph{overruled}, with the overruling reinstaters. A \preserve{} is justified by a surviving $\Via$ (and, if recovered, the reinstater); a \replace{} by standing defeaters on every derivation of $m_2$ and a surviving derivation of the substitute; a \skipm{} by standing defeaters on every derivation of every candidate.

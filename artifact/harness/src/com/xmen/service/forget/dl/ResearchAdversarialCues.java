@@ -156,12 +156,10 @@ public final class ResearchAdversarialCues {
         new Sc("A1", "no lapse, adversarial banner", Set.of(), Set.of(), Set.of("banner"), Map.of()),
         new Sc("A2", "no lapse, banner + hint, hint > banner", Set.of(), Set.of("hint"), Set.of("banner"),
             Map.of("hint", Set.of("banner"))),
-        new Sc("A3", "no lapse, banner + hint, no order", Set.of(), Set.of("hint"), Set.of("banner"), Map.of()),
-        new Sc("A4", "Forget(pw1), hint, no banner", Set.of(pw1), Set.of("hint"), Set.of(), Map.of()),
-        new Sc("A5", "Forget(pw1), banner + hint, no order", Set.of(pw1), Set.of("hint"), Set.of("banner"), Map.of()),
-        new Sc("A6", "Forget(pw1), banner + hint, banner > hint", Set.of(pw1), Set.of("hint"), Set.of("banner"),
+        new Sc("A3", "Forget(pw1), banner + hint, no order", Set.of(pw1), Set.of("hint"), Set.of("banner"), Map.of()),
+        new Sc("A4", "Forget(pw1), banner + hint, banner > hint", Set.of(pw1), Set.of("hint"), Set.of("banner"),
             Map.of("banner", Set.of("hint"))),
-        new Sc("A7", "Forget(pw1), banner + hint, hint > banner", Set.of(pw1), Set.of("hint"), Set.of("banner"),
+        new Sc("A5", "Forget(pw1), banner + hint, hint > banner", Set.of(pw1), Set.of("hint"), Set.of("banner"),
             Map.of("hint", Set.of("banner"))));
 
     AmbiguityBlockingReasoner ab = new AmbiguityBlockingReasoner();
@@ -176,6 +174,7 @@ public final class ResearchAdversarialCues {
       Map<Message, Literal> send = new LinkedHashMap<>();
       DefeasibleTheory th = extend(k, fb, ProceduralState.EMPTY, cues, byTarget, m3,
           new Adv(inter, s.adv(), s.above()), send);
+      System.err.print(DlOracleHarness.write(s.id(), th));
       Conclusions cab = ab.reason(th);
       Conclusions cap = ap.reason(th);
       Set<Literal>[] sup = ap.support();
@@ -188,7 +187,7 @@ public final class ResearchAdversarialCues {
     // Role of the pairs ω > d under ambiguity propagation (A5, A6 without those pairs).
     System.out.println("\nWithout the pairs ω > d (inert for ∂):");
     for (Sc s : sc) {
-      if (!s.id().equals("A5") && !s.id().equals("A6")) {
+      if (!s.id().equals("A3") && !s.id().equals("A4")) {
         continue;
       }
       ForgetBlocking fb = new ForgetBlocking(s.forget(), BlockingMode.CASE1_WEAK, Set.of());
@@ -235,7 +234,7 @@ public final class ResearchAdversarialCues {
         agree++;
       }
     }
-    System.out.println("\nDecision layer on the base fragment: in-logic decision = Alg. 2 decision on "
+    System.out.println("\nDecision layer on the base fragment: in-logic decision = Alg. 1 decision on "
         + agree + "/" + total + " random theories (targets as candidates)");
   }
 

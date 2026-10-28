@@ -6,7 +6,7 @@ We use the Bank Login ceremony analysed in~\SCP. A human $\human$ holds password
   \chal = \aenc{\pair{\nH}{\nB}}{\pk{\ltk}},\qquad
   \mthree = \senc{\pair{\human}{\pwa}}{\kf{\nH}{\nB}},
 \]
-where $\mathsf{k}$ is a public function that builds the session key. After receiving $\chal$, the knowledge of $\human$ is $K=\{\human,B_1,B_2,\nH,\pwa,\pwb,\ltk,\chal\}$ (plus $B_1$'s public key). \Cref{fig:derivations} shows the two normal derivations of $\mthree$ from $K$: $\pia$ takes $\nH$ from memory, $\pib$ reads it from the decrypted challenge. Both use the inference rules $\{\lbl{senc},\lbl{pair},\lbl{k},\lbl{proj},\lbl{adec}\}$; only $\pia$ has $\nH$ among its hypotheses.
+where $\mathsf{k}$ is a public function that builds the session key. After receiving $\chal$, the knowledge of $\human$ is $K=\{\human,B_1,B_2,\nH,\pwa,\pwb,\ltk,\chal\}$ (plus $B_1$'s public key). \Cref{fig:derivations} shows the two normal derivations of $\mthree$ from $K$: $\pia$ takes $\nH$ from memory, $\pib$ reads it from the decrypted challenge \footnote{The formal definition of \textit{normal derivation} will be given in \Cref{sec:background}; as of now we use the term for the convenience of the reader.}. Both use the inference rules $\{\lbl{senc},\lbl{pair},\lbl{k},\lbl{proj},\lbl{adec}\}$; only $\pia$ has $\nH$ among its hypotheses.
 
 \begin{figure}[t]
 \centering\small
@@ -18,29 +18,30 @@ where $\mathsf{k}$ is a public function that builds the session key. After recei
 \label{fig:derivations}
 \end{figure}
 
-\paragraph{What the published semantics decides.} In~\SCP, $\human$ forgets $\pwa$; both derivations have the blocked hypothesis $\pwa$; the only value with the same label is $\pwb$; so the send is replaced by $\senc{\pair{\human}{\pwb}}{\kf{\nH}{\nB}}$. If $B_1$ is compromised, the attacker learns $\pwb$ and logs in at $B_2$~\SCP. \Cref{tab:running} lists further situations, each decided by the unmodified implementation (\cref{sec:implementation}). In S2 a password hint is shown: the human recalls $\pwa$, yet the lapse persists, and without the hint the password is again inaccessible. In S3 and S4 the human has lost the ability to open the challenge (in practice, the device workflow that does it), while every value is still known. In S8, $\pib$ does not need the forgotten $\nH$. In S10 two cues each restore one of two forgotten values. The published test sees none of this: it has no state for lost skills, no notion of a cue, and treats a derivation as one indivisible test; in S3 it even emits a substitute that needs the lost skill.
+\paragraph{What the set-based semantics decides.} If $\human$ forgets $\pwa$, both derivations have the blocked hypothesis $\pwa$; the only value with the same label is $\pwb$; so the send is replaced by $\senc{\pair{\human}{\pwb}}{\kf{\nH}{\nB}}$. If $B_1$ is compromised, the attacker learns $\pwb$ and logs in at $B_2$. \Cref{tab:running} lists further situations, each decided by the unmodified implementation (\cref{sec:implementation}). In the second scenario in the table, namely S2, a password hint is shown: the human recalls $\pwa$, yet the lapse persists, and without the hint the password is again inaccessible. In S3 and S4 the human has lost the ability to open the challenge (in practice, the device workflow that does it), while every value is still known. In S6, $\pib$ does not need the forgotten $\nH$. In S8 two cues each restore one of two forgotten values. In the current set-based implementation, we are not able to model any of this: it has no state for lost skills, no notion of a cue, and treats a derivation as one indivisible test.
 
 \begin{table}[t]
 \centering\scriptsize
-\caption{Running example: decisions of the published semantics (\SCP, on the same derivations) and of this paper, both computed by the tool. $m_3' = \senc{\pair{\human}{\pwb}}{\kf{\nH}{\nB}}$.}
+\caption{Running example: decisions of the set-based semantics (on the same derivations) and of this paper, both computed by the tool. $m_3' = \senc{\pair{\human}{\pwb}}{\kf{\nH}{\nB}}$. All lapses and cues belong to the transition that receives $c$.}
 \label{tab:running}
 \setlength{\tabcolsep}{3pt}
 \begin{tabular}{@{}llll@{}}
 \toprule
- & Lapses and cues & \SCP & This paper (reason) \\
+ & Lapses and cues & Set-based & This paper (reason) \\
 \midrule
 S1 & $\pwa$ forgotten & \replace{} $m_3'$ & \replace{} $m_3'$ (lapse on both derivations) \\
 S2 & $\pwa$ forgotten, hint shown & \replace{} $m_3'$ & \preserve{} (hint overrules lapse) \\
 S3 & $\pwa$ forgotten, rule $\lbl{adec}$ lost & \replace{} $m_3'$ & \skipm{} (also blocks $m_3'$) \\
 S4 & rule $\lbl{adec}$ lost & \preserve{} & \skipm{} (every derivation uses $\lbl{adec}$) \\
-S6 & procedures $\pia$ and $\pib$ lost & \preserve{} & \skipm{} \\
-S8 & $\pwa$, $\nH$ forgotten, hint shown & \replace{} $m_3'$ & \preserve{} ($\pib$ survives, $\pia$ does not) \\
-S10 & $\pwa$, $\human$ forgotten, hint, autofill & \skipm{} & \preserve{} (two cues, two lapses) \\
+S5 & procedures $\pia$ and $\pib$ lost & \preserve{} & \skipm{} \\
+S6 & $\pwa$, $\nH$ forgotten, hint shown & \replace{} $m_3'$ & \preserve{} ($\pib$ survives, $\pia$ does not) \\
+S7 & $\pwa$, $\human$ forgotten, hint shown & \skipm{} & \skipm{} ($\omega_{\pi,\human}$ stands) \\
+S8 & $\pwa$, $\human$ forgotten, hint, autofill & \skipm{} & \preserve{} (two cues, two lapses) \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\paragraph{Problem statement.} Given a human transition with intended send $m_2$ and the human's cognitive state (knowledge, forgotten values, rules and derivations, cues), decide which mutation the state entails, with a justification. We ask:
+\paragraph{Problem statement.} Given a human transition with intended send $m_3$ \footnote{$m_3$ in this context denotes a generic transition's intended send message.} and the human's cognitive state (knowledge, forgotten values, rules and derivations, cues), decide which mutation the state entails, with a justification. We ask:
 \begin{enumerate*}[label=(Q\arabic*)]
 \item what the decision depends on, exactly;
 \item which choices in the underlying logic it depends on;
@@ -48,4 +49,5 @@ S10 & $\pwa$, $\human$ forgotten, hint, autofill & \skipm{} & \preserve{} (two c
 \item whether it can be computed soundly and efficiently, given that derivations may be infinitely many; and
 \item whether it changes verification outcomes.
 \end{enumerate*}
+
 \Cref{sec:properties} answers (Q1)--(Q4); \cref{sec:evaluation} addresses (Q5) and checks the answers to (Q1)--(Q4) against the implementation.

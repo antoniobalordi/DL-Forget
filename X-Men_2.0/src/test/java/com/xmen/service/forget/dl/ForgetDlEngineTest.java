@@ -149,14 +149,17 @@ class ForgetDlEngineTest {
   }
 
   @Test
-  @DisplayName("truncated enumeration yields UNKNOWN_COVERAGE, never Skip")
+  @DisplayName("saturation settles unusability without hiding truncated enumeration")
   void coverage() {
     ForgetDlEngine tiny = new ForgetDlEngine(new AmbiguityBlockingReasoner(), Set.of(),
         new ForgetDlEngine.Limits(new NormalDerivations.Limits(1, 1_000), 256));
     Message t = pair(pair(h, pw1), pair(h, pw1));
     Set<Message> k = Set.of(h, pw1, pair(h, pw1));
     ForgetDlResult r = tiny.run(in(k, Set.of(pw1, pair(h, pw1))).send(t).build());
-    assertEquals(Decision.UNKNOWN_COVERAGE, r.decision());
+    assertEquals(Decision.SKIP, r.decision());
+    assertEquals(Boolean.FALSE, r.usabilityFallback().get(t));
+    assertEquals(NormalDerivations.Coverage.TRUNCATED,
+        r.candidates().get(0).derivationCoverage());
     assertEquals(Decision.SKIP, engine.run(in(k, Set.of(pw1, pair(h, pw1))).send(t).build())
         .decision());
   }

@@ -21,9 +21,9 @@ memory states into theories, and `ForgetDlEngine` makes forgetting decisions.
 The [semantic contract](X-Men_2.0/docs/forget-dl/SEMANTIC_CONTRACT.md) records
 the supported models and the interpretation of the formal definitions.
 
-The **96 core tests** are in
+The **110 core tests** are in
 [X-Men_2.0/src/test/java/com/xmen/service/forget/dl/](X-Men_2.0/src/test/java/com/xmen/service/forget/dl/),
-in eight test classes. Host integration tests are in the adjacent `forget/`
+in ten test classes. Host integration tests are in the adjacent `forget/`
 package and `com/xmen/integrationTests/`.
 
 ## Run the tests
@@ -38,7 +38,7 @@ cd X-Men_2.0
 ./mvnw -B test '-Dtest=XMenInterfaceTest,DisplayScaleSupportTest'
 ```
 
-Expected results for this source revision: 96 core tests; 41 host/mutation
+Expected core result: 110 tests. Previously recorded application results: 41 host/mutation
 tests; 221 reported in the broader suite (219 pass, two intentionally disabled
 lexer/parser diagnostics); 13 GUI tests. The groups overlap. Run the GUI group
 separately in a desktop session. Maven downloads dependencies on its first run.
@@ -55,7 +55,7 @@ python3 -m pip install -r artifact/requirements.txt
 ```
 
 The script locates `X-Men_2.0/` in this repository, compiles the same DL core
-and its 96 tests with `javac`, runs the differential ASP oracle and the research
+and its 110 tests with `javac`, runs the differential ASP oracle and the research
 studies, and runs Tamarin when Tamarin and Maude are on `PATH`.
 The `javac` route uses the small JUnit API shim in `artifact/shim/`; Maven
 uses JUnit itself and also exercises the application integration.
@@ -70,6 +70,10 @@ Recorded outputs in `artifact/results/` and models/logs in `artifact/tamarin/`
 remain available for comparison. Timings depend on the machine. Tamarin
 reproduction uses Tamarin 1.12.0 and Maude 3.5.1; without them the script
 explicitly reports that this stage was skipped.
+
+The manuscript's scalability table retains measurements from before the usability
+fallback. Fresh runs use saturation to resolve eligible truncated target searches;
+the exponential families now yield Preserve/Skip rather than Unknown.
 
 To verify the supplied model checksums:
 

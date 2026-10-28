@@ -192,7 +192,7 @@ public final class ForgetDlEngine {
       return new ForgetDlResult(Status.OK,
           unresolvedReacquisition.isEmpty() ? Decision.NEGLECT : Decision.UNKNOWN_COVERAGE,
           List.copyOf(notes), after, reacquired, neglected, List.of(), List.of(),
-          Coverage.COMPLETE, false, null, null, List.of());
+          Coverage.COMPLETE, false, null, null, List.of(), Map.of());
     }
 
     if (m2 == null) {
@@ -200,7 +200,7 @@ public final class ForgetDlEngine {
           unresolvedReacquisition.isEmpty() ? Decision.NO_SEND : Decision.UNKNOWN_COVERAGE,
           List.copyOf(notes), after,
           reacquired, Set.of(), List.of(), List.of(), Coverage.COMPLETE, false, null, null,
-          List.of());
+          List.of(), Map.of());
     }
 
     // ---- Lines 14-19: candidate targets ----
@@ -254,6 +254,16 @@ public final class ForgetDlEngine {
       }
     }
 
+    boolean fallbackEnabled = unresolvedReacquisition.isEmpty()
+        && proc1.forgottenProcedures().isEmpty() && reasoner instanceof AmbiguityBlockingReasoner;
+    if (fallbackEnabled && candidateCoverage == Coverage.TRUNCATED
+        && kSorted.stream().noneMatch(h -> Terms.occursIn(h, m2) && blocking.isBlocked(h)
+            && !cued.contains(h) && !replacementSet(h, kSorted, forget1, in.labels()).isEmpty())) {
+      // Every omitted substitution either has an empty replacement set or leaves m2 unchanged.
+      candidateCoverage = Coverage.COMPLETE;
+      notes.add("candidate set is exhaustive: no eligible substitution changes the intended target");
+    }
+
     // ---- Π_t for every t ∈ T ----
     Map<Message, List<Derivation>> byTarget = new LinkedHashMap<>();
     Map<Message, Coverage> coverage = new LinkedHashMap<>();
@@ -273,6 +283,17 @@ public final class ForgetDlEngine {
     Compiled compiled = compiler.compile(after.knowledge(), blocking, proc1, in.cues(), byTarget);
     Conclusions conc = reasoner.reason(compiled.theory());
 
+    Map<Message, Boolean> usabilityFallback = new LinkedHashMap<>();
+    if (fallbackEnabled) {
+      UsabilityDecider decider = new UsabilityDecider(privateFunctions);
+      for (Message t : provenance.keySet()) {
+        if (coverage.get(t) == Coverage.TRUNCATED && !conc.provable(compiled.usable().get(t))) {
+          usabilityFallback.put(t,
+              decider.usable(t, after.knowledge(), blocking, proc1.forgottenRules(), in.cues()));
+        }
+      }
+    }
+
     List<Candidate> candidates = new ArrayList<>();
     for (Message t : provenance.keySet()) {
       candidates.add(new Candidate(t, t.equals(m2), List.copyOf(provenance.get(t)),
@@ -286,11 +307,11 @@ public final class ForgetDlEngine {
     boolean partial = false;
     if (!unresolvedReacquisition.isEmpty()) {
       decision = Decision.UNKNOWN_COVERAGE;
-    } else if (conc.provable(u2)) {
+    } else if (conc.provable(u2) || Boolean.TRUE.equals(usabilityFallback.get(m2))) {
       decision = Decision.PRESERVE;
-    } else if (!conc.refuted(u2)) {
+    } else if (!conc.refuted(u2) && !usabilityFallback.containsKey(m2)) {
       decision = Decision.UNDECIDED_LOGIC;
-    } else if (coverage.get(m2) != Coverage.COMPLETE) {
+    } else if (coverage.get(m2) != Coverage.COMPLETE && !usabilityFallback.containsKey(m2)) {
       decision = Decision.UNKNOWN_COVERAGE;
     } else {
       boolean allConclusive = candidateCoverage == Coverage.COMPLETE;
@@ -299,9 +320,10 @@ public final class ForgetDlEngine {
           continue;
         }
         Literal u = compiled.usable().get(c.target());
-        if (conc.provable(u)) {
+        if (conc.provable(u) || Boolean.TRUE.equals(usabilityFallback.get(c.target()))) {
           replacements.add(c);
-        } else if (!conc.refuted(u) || c.derivationCoverage() != Coverage.COMPLETE) {
+        } else if (!usabilityFallback.containsKey(c.target())
+            && (!conc.refuted(u) || c.derivationCoverage() != Coverage.COMPLETE)) {
           allConclusive = false;
         }
       }
@@ -314,7 +336,7 @@ public final class ForgetDlEngine {
     }
     return new ForgetDlResult(Status.OK, decision, List.copyOf(notes), after, reacquired,
         Set.of(), List.copyOf(candidates), List.copyOf(replacements), candidateCoverage, partial,
-        compiled, conc, ForgetDlResult.buildTrace(compiled, conc, m2));
+        compiled, conc, ForgetDlResult.buildTrace(compiled, conc, m2), Map.copyOf(usabilityFallback));
   }
 
   /**
